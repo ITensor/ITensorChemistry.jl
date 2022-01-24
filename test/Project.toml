@@ -1,0 +1,4 @@
+[deps]
+ITensorChemistry = "cbb729c8-cb01-4982-b6b1-bc32521fc628"
+ITensors = "9136182c-28ba-11e9-034c-db9fb085ebd5"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
