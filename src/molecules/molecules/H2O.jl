@@ -5,4 +5,5 @@ function molecule(::Molecule"H₂O")
   H 0.9197881882 2.4580185570  0.6297938830
   """
 end
-
+molecule(m::Molecule"water") = molecule(alias(m))
+alias(::Molecule"water") = Molecule"H₂O"()

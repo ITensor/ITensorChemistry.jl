@@ -4,12 +4,14 @@ using Fermi
 using ITensors
 using Suppressor
 
-include("molecules/molecule.jl")
-include("molecules/molecules/H2.jl")
-include("molecules/molecules/H2O.jl")
-include("molecules/molecules/N2.jl")
+include(joinpath("molecules", "molecule.jl"))
+for file in readdir(joinpath(@__DIR__, "molecules", "molecules"); join=true)
+  if endswith(file, ".jl")
+    include(file)
+  end
+end
 include("molecular_orbital_hamiltonian.jl")
 
-export molecular_orbital_hamiltonian_and_state
+export molecular_orbital_hamiltonian
 
 end

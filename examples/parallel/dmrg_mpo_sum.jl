@@ -1,6 +1,14 @@
 using ITensors
 using ITensorChemistry
 
+ITensors.BLAS.set_num_threads(1)
+ITensors.Strided.disable_threads()
+ITensors.disable_threaded_blocksparse()
+
+@show Threads.nthreads()
+
+include("parallel_projmpo.jl")
+
 molecule = "H₂O"
 basis = "sto-3g"
 
@@ -8,7 +16,7 @@ basis = "sto-3g"
 @show basis
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(; molecule, basis)
+(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(; molecule, basis, nsub_hamiltonians=Threads.nthreads())
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(state))
@@ -17,13 +25,17 @@ s = siteinds("Electron", length(state); conserve_qns=true)
 
 println("\nConstruct MPO")
 
-H = @time MPO(hamiltonian, s)
+H = Vector{MPO}(undef, Threads.nthreads())
+@time Threads.@threads for n in 1:Threads.nthreads()
+  H[Threads.threadid()] = MPO(hamiltonian[n], s)
+end
 println("MPO constructed")
 
-@show maxlinkdim(H)
+@show maxlinkdim.(H)
 
 ψhf = MPS(s, state)
 
+ITensors.inner(ψ, Hs::Vector, ϕ) = sum([inner(ψ, H, ϕ) for H in Hs])
 @show inner(ψhf, H, ψhf)
 @show hartree_fock_energy
 

@@ -1,14 +1,14 @@
 using ITensors
 using ITensorChemistry
 
-molecule = "H₂O"
+molecule = "methane"
 basis = "sto-3g"
 
 @show molecule
 @show basis
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(; molecule, basis)
+(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(; molecule, basis, nsub_hamiltonians=2)
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(state))
@@ -17,14 +17,14 @@ s = siteinds("Electron", length(state); conserve_qns=true)
 
 println("\nConstruct MPO")
 
-H = @time MPO(hamiltonian, s)
+H = @time [MPO(h, s) for h in hamiltonian]
 println("MPO constructed")
 
-@show maxlinkdim(H)
+@show maxlinkdim.(H)
 
 ψhf = MPS(s, state)
 
-@show inner(ψhf, H, ψhf)
+@show sum(h -> inner(ψhf, h, ψhf), H)
 @show hartree_fock_energy
 
 sweeps = Sweeps(10)
