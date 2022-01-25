@@ -7,6 +7,8 @@ ITensors.disable_threaded_blocksparse()
 
 @show Threads.nthreads()
 
+# This pirates ITensors.jl functions in DMRG
+# to make them parallel over the sum of MPOs.
 include("parallel_projmpo.jl")
 
 molecule = "H₂O"
@@ -16,7 +18,7 @@ basis = "sto-3g"
 @show basis
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(; molecule, basis, nsub_hamiltonians=Threads.nthreads())
+(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(Threads.nthreads(); molecule, basis)
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(state))

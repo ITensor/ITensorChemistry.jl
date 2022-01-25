@@ -110,10 +110,10 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltoni
   return hamiltonian
 end
 
-function molecular_orbital_hamiltonian(; nsub_hamiltonians=1, kwargs...)
+function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; kwargs...)
   (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy) = molecular_orbital_hamiltonian_coefficients(; kwargs...)
 
-  if nsub_hamiltonians == 1
+  if isnothing(nsub_hamiltonians)
     hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
   else
     hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltonians)
