@@ -10,7 +10,7 @@
 
 The main functionality of this package is outputting a second quantized quantum chemistry Hamiltonian in the molecular orbital basis, given a molecule and atomic orbital basis.
 
-Below the hood, the package uses Hartree-Fock implemented in [`Fermi.jl`](https://github.com/FermiQC/Fermi.jl) to obtain the molecular orbital basis and one-electron and two-electron integrals.
+Below the hood, the package uses Hartree-Fock implemented in [Fermi.jl](https://github.com/FermiQC/Fermi.jl) to obtain the molecular orbital basis and one-electron and two-electron integrals.
 
 The main output is an `OpSum` from ITensors.jl, which is a representation of the second quantized Hamiltonian. This can be converted into a variety of other formats, such as a matrix product operator (MPO) to run DMRG, quantum circuit, full matrix representation for exact diagonalization (ED) for full configuration interaction (FCI) calculations, etc.
 
