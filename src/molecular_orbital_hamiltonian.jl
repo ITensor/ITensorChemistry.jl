@@ -39,18 +39,18 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
   nα = size(hα, 1)
   for i in 1:nα, j in 1:nα
     if norm(hα[i, j]) > 1e-15
-      hamiltonian .+= hα[i, j], "Cdagup", i, "Cup", j
-      hamiltonian .+= hα[i, j], "Cdagdn", i, "Cdn", j
+      hamiltonian .+= hα[i, j], "c†↑", i, "c↑", j
+      hamiltonian .+= hα[i, j], "c†↓", i, "c↓", j
     end
   end
   for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα
     if norm(gα[i, j, k, l]) > 1e-15
       if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
-        hamiltonian .+= gα[i, j, k, l], "Cdagup", i, "Cdagup", j, "Cup", k, "Cup", l
-        hamiltonian .+= gα[i, j, k, l], "Cdagdn", i, "Cdagdn", j, "Cdn", k, "Cdn", l
+        hamiltonian .+= gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
+        hamiltonian .+= gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
       end
-      hamiltonian .+= gα[i, j, k, l], "Cdagup", i, "Cdagdn", j, "Cdn", k, "Cup", l
-      hamiltonian .+= gα[i, j, k, l], "Cdagdn", i, "Cdagup", j, "Cup", k, "Cdn", l
+      hamiltonian .+= gα[i, j, k, l], "c†↑", i, "c†↓", j, "c↓", k, "c↑", l
+      hamiltonian .+= gα[i, j, k, l], "c†↓", i, "c†↑", j, "c↑", k, "c↓", l
     end
   end
   return hamiltonian
@@ -91,19 +91,19 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltoni
     for i in 1:nα, j in 1:nα
       pij = 1 / 2 * (proc(p, nsub_hamiltonians, i) + proc(p, nsub_hamiltonians, j))
       if pij ≠ 0 && norm(hα[i, j]) > 1e-10
-        hamiltonian[p] .+= pij * hα[i, j], "Cdagup", i, "Cup", j
-        hamiltonian[p] .+= pij * hα[i, j], "Cdagdn", i, "Cdn", j
+        hamiltonian[p] .+= pij * hα[i, j], "c†↑", i, "c↑", j
+        hamiltonian[p] .+= pij * hα[i, j], "c†↓", i, "c↓", j
       end
     end
     for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα
       pijkl = proc(p, nsub_hamiltonians, i, j, k, l)
       if pijkl ≠ 0 && norm(gα[i, j, k, l]) > 1e-10
         if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
-          hamiltonian[p] .+= gα[i, j, k, l], "Cdagup", i, "Cdagup", j, "Cup", k, "Cup", l
-          hamiltonian[p] .+= gα[i, j, k, l], "Cdagdn", i, "Cdagdn", j, "Cdn", k, "Cdn", l
+          hamiltonian[p] .+= gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
+          hamiltonian[p] .+= gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
         end
-        hamiltonian[p] .+= gα[i, j, k, l], "Cdagup", i, "Cdagdn", j, "Cdn", k, "Cup", l
-        hamiltonian[p] .+= gα[i, j, k, l], "Cdagdn", i, "Cdagup", j, "Cup", k, "Cdn", l
+        hamiltonian[p] .+= gα[i, j, k, l], "c†↑", i, "c†↓", j, "c↓", k, "c↑", l
+        hamiltonian[p] .+= gα[i, j, k, l], "c†↓", i, "c†↑", j, "c↑", k, "c↓", l
       end
     end
   end
