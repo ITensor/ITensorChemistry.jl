@@ -1,8 +1,9 @@
 using ITensors
 using ITensorChemistry
-#using ChainRulesCore
-#using OptimKit
-#using Zygote
+using OptimKit
+using Zygote
+
+ITensors.inner(ψ, Hs::Vector, ϕ) = sum([inner(ψ, H, ϕ) for H in Hs])
 
 molecule = "H₂O"
 basis = "sto-3g"
@@ -33,11 +34,10 @@ println("MPO constructed")
 
 ψhf = MPS(s, state)
 
-ITensors.inner(ψ, Hs::Vector, ϕ) = sum([inner(ψ, H, ϕ) for H in Hs])
 @show inner(ψhf, H, ψhf)
 @show hartree_fock_energy
 
-sweeps = Sweeps(10)
+sweeps = Sweeps(4)
 setmaxdim!(sweeps, 100, 200)
 setcutoff!(sweeps, 1e-6)
 setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
@@ -48,44 +48,64 @@ println("\nRunning DMRG")
 e, ψ = dmrg(H, ψhf, sweeps)
 println("DMRG complete")
 
-# Unitary coupled cluster (UCC)
-T = []
+function ITensors.op(::OpName"ucc_1e", ::SiteType"Electron", s1::Index, s2::Index)
+  T = ITensor()
+  for σ in ["↑", "↓"]
+    T += op("c†$σ", s1) * op("c$σ", s2)
+    T -= op("c†$σ", s2) * op("c$σ", s1)
+  end
+  return T
+end
+
+function ITensors.op(::OpName"ucc_2e", ::SiteType"Electron", s1::Index, s2::Index, s3::Index, s4::Index)
+  T = ITensor()
+  for σ1 in ["↑", "↓"], σ2 in ["↑", "↓"]
+    T += op("c†$σ1", s1) * op("c†$σ2", s2) * op("c$σ2", s3) * op("c$σ1", s4)
+    T -= op("c†$σ1", s4) * op("c†$σ2", s3) * op("c$σ2", s2) * op("c$σ1", s1)
+  end
+  return T
+end
+
 nα = length(ψ)
-for i in 1:nα, j in (i + 1):nα
-  Tn = OpSum()
-  Tn += "c†↑", i, "c↑", j
-  Tn .-= "c†↑", j, "c↑", i
-  push!(T, Tn)
 
-  Tn = OpSum()
-  Tn += "c†↓", i, "c↓", j
-  Tn -= "c†↓", j, "c↓", i
-  push!(T, Tn)
-end
-for i in 1:nα, j in (i + 1):nα, k in (j + 1):nα, l in (k + 1):nα
-  Tn = OpSum()
-  Tn += "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
-  Tn -= "c†↑", l, "c†↑", k, "c↑", j, "c↑", i
-  push!(T, Tn)
-
-  Tn = OpSum()
-  Tn += "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
-  Tn -= "c†↓", l, "c†↓", k, "c↓", j, "c↓", i
-  push!(T, Tn)
-
-  Tn = OpSum()
-  Tn += "c†↑", i, "c†↓", j, "c↓", k, "c↑", l
-  Tn -= "c†↑", l, "c†↓", k, "c↓", j, "c↑", i
-  push!(T, Tn)
-
-  Tn = OpSum()
-  Tn += "c†↓", i, "c†↑", j, "c↑", k, "c↓", l
-  Tn -= "c†↓", l, "c†↑", k, "c↑", j, "c↓", i
-  push!(T, Tn)
-end
+T_1e = ITensor[op("ucc_1e", s[i], s[j]) for i in 1:nα, j in 1:nα if i < j]
+T_2e = ITensor[op("ucc_2e", s[i], s[j], s[k], s[l]) for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα if i < j < k < l]
+T = [T_1e; T_2e]
 
 nt = length(T)
-t = zeros(nt)
-U = [exp(t[n] * T[n]) for n in 1:nt]
-#∂ₜU = [T[n] * exp(t[n] * T[n]) for n in 1:nt]
+t0 = zeros(nt)
+U = [exp(t0[n] * T[n]) for n in 1:nt]
 
+@show length(U)
+
+Uψhf = apply(U, ψhf)
+@show inner(Uψhf, H, Uψhf)
+
+function ucc_circuit(nα, t)
+  # This is a more compact alternative, but Zygote fails to differentiate it
+  #T_1e = ITensor[op("ucc_1e", s[i], s[j]) for i in 1:nα, j in 1:nα if i < j]
+  T_1e = ITensor[]
+  for i in 1:nα, j in (i + 1):nα
+    T_1e = [T_1e; op("ucc_1e", s[i], s[j])]
+  end
+  T_2e = ITensor[]
+  for i in 1:nα, j in (i + 1):nα, k in (j + 1):nα, l in (k + 1):nα
+    T_2e = [T_2e; op("ucc_2e", s[i], s[j], s[k], s[l])]
+  end
+  T = [T_1e; T_2e]
+  return [exp(t[n] * T[n]) for n in 1:length(t)]
+end
+
+function loss(t)
+  U = ucc_circuit(nα, t)
+  Uψhf = apply(U, ψhf)
+  return inner(Uψhf, H, Uψhf)
+end
+
+@show loss(t0)
+
+loss_∇loss(t) = (loss(t), convert(Vector, loss'(t)))
+algorithm = LBFGS(; gradtol=1e-3, verbosity=2)
+tₒₚₜ, lossₒₚₜ, ∇lossₒₚₜ, numfg, normgradhistory = optimize(loss_∇loss, t0, algorithm)
+
+@show loss(tₒₚₜ)
