@@ -1,6 +1,7 @@
 using ITensors
 using ITensorChemistry
 using OptimKit
+using Random
 using Zygote
 
 ITensors.inner(ψ, Hs::Vector, ϕ) = sum([inner(ψ, H, ϕ) for H in Hs])
@@ -48,59 +49,72 @@ println("\nRunning DMRG")
 e, ψ = dmrg(H, ψhf, sweeps)
 println("DMRG complete")
 
-function ITensors.op(::OpName"ucc_1e", ::SiteType"Electron", s1::Index, s2::Index)
-  T = ITensor()
+function ITensors.op(::OpName"ucc_1e", st::SiteType"Electron", s1::Index, s2::Index; t)
+  T = zeros(4^2, 4^2)
   for σ in ["↑", "↓"]
-    T += op("c†$σ", s1) * op("c$σ", s2)
-    T -= op("c†$σ", s2) * op("c$σ", s1)
+    # Note: kron has opposite conventions from ITensor
+    #T += c†σ cσ
+    T += kron(op("c$σ", st), op("c†$σ", st))
+    #T -= cσ c†σ
+    T -= kron(op("c†$σ", st), op("c$σ", st))
   end
-  return T
+  return itensor(exp(t * T), s1', s2', dag(s1), dag(s2))
 end
 
-function ITensors.op(::OpName"ucc_2e", ::SiteType"Electron", s1::Index, s2::Index, s3::Index, s4::Index)
-  T = ITensor()
+function ITensors.op(::OpName"ucc_2e", st::SiteType"Electron", s1::Index, s2::Index, s3::Index, s4::Index; t)
+  T = zeros(4^4, 4^4)
   for σ1 in ["↑", "↓"], σ2 in ["↑", "↓"]
-    T += op("c†$σ1", s1) * op("c†$σ2", s2) * op("c$σ2", s3) * op("c$σ1", s4)
-    T -= op("c†$σ1", s4) * op("c†$σ2", s3) * op("c$σ2", s2) * op("c$σ1", s1)
+    # Note: kron has opposite conventions from ITensor
+    #T += c†σ c†σ cσ cσ
+    T += kron(op("c$σ1", st), op("c$σ2", st), op("c†$σ2", st), op("c†$σ1", st))
+    #T -= cσ cσ c†σ c†σ
+    T -= kron(op("c†$σ1", st), op("c†$σ2", st), op("c$σ2", st), op("c$σ1", st))
   end
-  return T
+  return itensor(exp(t * T), s1', s2', s3', s4', dag(s1), dag(s2), dag(s3), dag(s4))
 end
 
-nα = length(ψ)
+# Get the number of parameters
+nα = length(s)
+sites_1e = [(i, j) for i in 1:nα, j in 1:nα if i < j]
+sites_2e = [(i, j, k, l) for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα if i < j < k < l]
 
-T_1e = ITensor[op("ucc_1e", s[i], s[j]) for i in 1:nα, j in 1:nα if i < j]
-T_2e = ITensor[op("ucc_2e", s[i], s[j], s[k], s[l]) for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα if i < j < k < l]
-T = [T_1e; T_2e]
+function ucc_circuit(s, t)
+  nt_1e = length(sites_1e)
+  nt_2e = length(sites_2e)
+  t_1e = t[1:nt_1e]
+  t_2e = t[(nt_1e + 1):end]
 
-nt = length(T)
-t0 = zeros(nt)
-U = [exp(t0[n] * T[n]) for n in 1:nt]
-
-@show length(U)
-
-Uψhf = apply(U, ψhf)
-@show inner(Uψhf, H, Uψhf)
-
-function ucc_circuit(nα, t)
-  # This is a more compact alternative, but Zygote fails to differentiate it
-  #T_1e = ITensor[op("ucc_1e", s[i], s[j]) for i in 1:nα, j in 1:nα if i < j]
-  T_1e = ITensor[]
-  for i in 1:nα, j in (i + 1):nα
-    T_1e = [T_1e; op("ucc_1e", s[i], s[j])]
-  end
-  T_2e = ITensor[]
-  for i in 1:nα, j in (i + 1):nα, k in (j + 1):nα, l in (k + 1):nα
-    T_2e = [T_2e; op("ucc_2e", s[i], s[j], s[k], s[l])]
-  end
-  T = [T_1e; T_2e]
-  return [exp(t[n] * T[n]) for n in 1:length(t)]
+  U_1e = [(n = sites_1e[i]; op("ucc_1e", s[n[1]], s[n[2]]; t=t_1e[i])) for i in eachindex(sites_1e)]
+  U_2e = [(n = sites_2e[i]; op("ucc_2e", s[n[1]], s[n[2]], s[n[3]], s[n[4]]; t=t_2e[i])) for i in eachindex(sites_2e)]
+  return [U_1e; U_2e]
 end
 
 function loss(t)
-  U = ucc_circuit(nα, t)
-  Uψhf = apply(U, ψhf)
+  U = ucc_circuit(s, t)
+  Uψhf = apply(U, ψhf; cutoff=1e-6)
   return inner(Uψhf, H, Uψhf)
 end
+
+nt_1e = length(sites_1e)
+nt_2e = length(sites_2e)
+
+# Start at HF GS
+# When trying to optimize starting from this state,
+# for some reason the paramaters go to NaN.
+# Need to debug.
+#t0_1e = zeros(nt_1e)
+#t0_2e = zeros(nt_2e)
+
+Random.seed!(1234)
+t0_1e = randn(nt_1e)
+t0_2e = randn(nt_2e)
+
+t0 = [t0_1e; t0_2e]
+
+U0 = ucc_circuit(s, t0)
+
+U0ψhf = apply(U0, ψhf)
+@show inner(U0ψhf, H, U0ψhf)
 
 @show loss(t0)
 
