@@ -4,7 +4,9 @@ using OptimKit
 using Random
 using Zygote
 
-ITensors.inner(ψ, Hs::Vector, ϕ) = sum([inner(ψ, H, ϕ) for H in Hs])
+# General definitions
+ITensors.inner(ψ, Hs::Vector, ϕ; kwargs...) = sum([inner(ψ, H, ϕ; kwargs...) for H in Hs])
+⊗(x...) = kron(reverse(x)...)
 
 molecule = "H₂O"
 basis = "sto-3g"
@@ -49,28 +51,22 @@ println("\nRunning DMRG")
 e, ψ = dmrg(H, ψhf, sweeps)
 println("DMRG complete")
 
-function ITensors.op(::OpName"ucc_1e", st::SiteType"Electron", s1::Index, s2::Index; t)
+function ITensors.op(::OpName"ucc_1e", st::SiteType"Electron"; f)
   T = zeros(4^2, 4^2)
   for σ in ["↑", "↓"]
-    # Note: kron has opposite conventions from ITensor
-    #T += c†σ cσ
-    T += kron(op("c$σ", st), op("c†$σ", st))
-    #T -= cσ c†σ
-    T -= kron(op("c†$σ", st), op("c$σ", st))
+    T += op("c†$σ", st) ⊗ op("c$σ", st)
+    T -= op("c$σ", st) ⊗ op("c†$σ", st)
   end
-  return itensor(exp(t * T), s1', s2', dag(s1), dag(s2))
+  return f(T)
 end
 
-function ITensors.op(::OpName"ucc_2e", st::SiteType"Electron", s1::Index, s2::Index, s3::Index, s4::Index; t)
+function ITensors.op(::OpName"ucc_2e", st::SiteType"Electron"; f)
   T = zeros(4^4, 4^4)
   for σ1 in ["↑", "↓"], σ2 in ["↑", "↓"]
-    # Note: kron has opposite conventions from ITensor
-    #T += c†σ c†σ cσ cσ
-    T += kron(op("c$σ1", st), op("c$σ2", st), op("c†$σ2", st), op("c†$σ1", st))
-    #T -= cσ cσ c†σ c†σ
-    T -= kron(op("c†$σ1", st), op("c†$σ2", st), op("c$σ2", st), op("c$σ1", st))
+    T += op("c†$σ1", st) ⊗ op("c†$σ2", st) ⊗ op("c$σ2", st) ⊗ op("c$σ1", st)
+    T -= op("c$σ1", st) ⊗ op("c$σ2", st) ⊗ op("c†$σ2", st) ⊗ op("c†$σ1", st)
   end
-  return itensor(exp(t * T), s1', s2', s3', s4', dag(s1), dag(s2), dag(s3), dag(s4))
+  return f(T)
 end
 
 # Get the number of parameters
@@ -84,15 +80,31 @@ function ucc_circuit(s, t)
   t_1e = t[1:nt_1e]
   t_2e = t[(nt_1e + 1):end]
 
-  U_1e = [(n = sites_1e[i]; op("ucc_1e", s[n[1]], s[n[2]]; t=t_1e[i])) for i in eachindex(sites_1e)]
-  U_2e = [(n = sites_2e[i]; op("ucc_2e", s[n[1]], s[n[2]], s[n[3]], s[n[4]]; t=t_2e[i])) for i in eachindex(sites_2e)]
+  U_1e = [
+    (
+      f(x) = exp(t_1e[i] * x);
+      n⃗ = sites_1e[i];
+      s⃗ = [s[n] for n in n⃗];
+      op("ucc_1e", s⃗...; f=f)
+    )
+    for i in eachindex(sites_1e)
+  ]
+  U_2e = [
+    (
+      f(x) = exp(t_2e[i] * x);
+      n⃗ = sites_2e[i];
+      s⃗ = [s[n] for n in n⃗];
+      op("ucc_2e", s⃗...; f=f)
+    )
+    for i in eachindex(sites_2e)
+  ]
   return [U_1e; U_2e]
 end
 
 function loss(t)
   U = ucc_circuit(s, t)
-  Uψhf = apply(U, ψhf; cutoff=1e-6)
-  return inner(Uψhf, H, Uψhf)
+  Uψhf = apply(U, ψhf; cutoff=1e-2)
+  return inner(Uψhf', H, Uψhf; cutoff=1e-2)
 end
 
 nt_1e = length(sites_1e)
@@ -106,8 +118,9 @@ nt_2e = length(sites_2e)
 #t0_2e = zeros(nt_2e)
 
 Random.seed!(1234)
-t0_1e = randn(nt_1e)
-t0_2e = randn(nt_2e)
+random_scale = 0.1
+t0_1e = random_scale * randn(nt_1e)
+t0_2e = random_scale * randn(nt_2e)
 
 t0 = [t0_1e; t0_2e]
 
