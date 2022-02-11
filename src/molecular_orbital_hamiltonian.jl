@@ -32,6 +32,7 @@ function molecular_orbital_hamiltonian_coefficients(;
   return (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy)
 end
 
+
 function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
   # Representation of the second quantized quantum chemistry Hamiltonian.
   hamiltonian = OpSum()
@@ -110,7 +111,7 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltoni
   return hamiltonian
 end
 
-function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; kwargs...)
+function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; sitetype::String = "Electron", kwargs...)
   (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy) = molecular_orbital_hamiltonian_coefficients(; kwargs...)
 
   if isnothing(nsub_hamiltonians)
@@ -123,5 +124,57 @@ function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; kwargs...)
   αocc_state = [i in 1:nαocc ? 1 : 0 for i in 1:nα]
   occ_to_state = Dict([0 => 1, 1 => 4])
   state = [occ_to_state[n] for n in αocc_state]
+  
+  if sitetype == "Fermion"
+    hamiltonian = electron_to_fermion(hamiltonian)
+    state = electron_to_fermion(state)
+    return (; hamiltonian, state, hartree_fock_energy)
+  end
   return (; hamiltonian, state, hartree_fock_energy)
 end
+
+
+"""
+    electron_to_fermion(hamiltonian::OpSum)
+
+Map an OpSum from spinfull to spinless fermions.
+"""
+function electron_to_fermion(hamiltonian::OpSum)
+  fermion_hamiltonian = OpSum()
+  # loop over MPOTerms
+  for k in 1:length(hamiltonian)
+    h = hamiltonian[k]
+    c = ITensors.coef(h)
+    sites = first.(ITensors.sites.(ITensors.ops(h)))
+    O = ITensors.name.(ITensors.ops(h))
+    
+    if O == ["Id"]
+      fermion_hamiltonian += c, "Id", 1
+    else
+      ops_and_sites = []
+      # loop over each single-site operator
+      for (j,o) in enumerate(O)
+        # the fermion is placed at twice the site number + 1 if ↓
+        fermionsite = 2 * sites[j] + Int(o[end] == '↓') - 1
+        ops_and_sites = vcat(ops_and_sites, (String(strip(o, o[end])), fermionsite)...) 
+      end
+      fermion_hamiltonian += (c, ops_and_sites...)
+    end
+  end
+  return fermion_hamiltonian
+end
+
+"""
+    electron_to_fermion(electron_state::Vector)
+
+Map a product state from spinfull to spinless fermions.
+"""
+function electron_to_fermion(electron_state::Vector)
+  stmap = [[1,1],[1,2],[2,1],[2,2]]
+  fermion_state = zeros(Int,2*length(electron_state))
+  for k in 1:length(electron_state)
+    fermion_state[2*k-1:2*k] = stmap[electron_state[k]]
+  end
+  return fermion_state
+end
+
