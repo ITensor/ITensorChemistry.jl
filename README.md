@@ -29,13 +29,13 @@ Run DMRG on a specified molecule in the molecular orbital basis:
 using ITensors
 using ITensorChemistry
 
-molecule = "H₂"
+mol = molecule("N₂")
 basis = "sto-3g"
 
 @show molecule
 @show basis
 
-(; hamiltonian, state, hartree_fock_energy) = molecular_orbital_hamiltonian_and_state(; molecule, basis)
+(; hamiltonian, state, hartree_fock_energy) = molecular_orbital_hamiltonian(mol; basis)
 
 println("Basis set size = ", length(state))
 

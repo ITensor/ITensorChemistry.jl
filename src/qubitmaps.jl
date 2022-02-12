@@ -1,4 +1,12 @@
-function jordanwigner(H::OpSum; threshold = 1e-10)
+"""
+    jordanwigner(H::OpSum; threshold = 1e-15)
+
+JORDAN-WIGNER TRANSFORMATION
+
+aⱼ  = - (∏ᵢ₌₁ʲ  Zᵢ) (Xᵢ + iYᵢ)/2
+aⱼ† = - (∏ᵢ₌₁ʲ  Zᵢ) (Xᵢ - iYᵢ)/2
+"""
+function jordanwigner(H::OpSum; threshold = 1e-15)
   Hq = OpSum()
   for k in 1:length(H)
     if ITensors.name.(ITensors.ops(H[k])) == ["Id"]
@@ -9,9 +17,9 @@ function jordanwigner(H::OpSum; threshold = 1e-10)
         Hq += Q[j]
       end
     end
-    ITensors.sortmergeterms!(Hq)
   end
   newH = OpSum()
+  ITensors.sortmergeterms!(Hq)
   for k in 1:length(Hq)
     coeff = ITensors.coef(Hq[k])
     if norm(coeff) > threshold
@@ -32,21 +40,18 @@ function jordanwigner(F::ITensors.MPOTerm)
   
   oplist = []
   coefflist = []
-  maxsite = maximum(Fsites)
   for k in 1:length(Fops)
     Fsite = Fsites[k]
     Fname = Fnames[k]
-    fstring = pauli(repeat("Z", Fsite-1))
-    X = pauli("X", Fsite)
-    X = fstring * pauli(1/2, "X", Fsite)
-    Y = fstring * pauli("Y", Fsite)
-    Y = Fname[end] == '†' ? -im/2 * Y : im/2 * Y
+    
+    cx, cy = 1/2, Fname[end] == '†' ? -im/2 : im/2 
+    X = pauli(cx, "Z" ^(Fsite-1) * "X")
+    Y = pauli(cy, "Z" ^(Fsite-1) * "Y")
     push!(oplist, (X,Y)) 
   end
-  oplist = vec(collect(Base.Iterators.product(oplist...)))
   Qop = []
   energy_offset = 0.0
-  for p in oplist
+  for p in Iterators.product(oplist...)
     O = reduce(*, p)
     coeff = (-1)^length(Fops) * Fcoeff * coefficient(O)
     op = operator(O)
@@ -58,6 +63,7 @@ function jordanwigner(F::ITensors.MPOTerm)
     end
   end
   energy_offset ≠ 0.0 && return vcat(Qop, [(energy_offset, "Id", 1)]) 
+  
   return Qop
 end
 

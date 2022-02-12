@@ -1,14 +1,14 @@
 using ITensors
 using ITensorChemistry
 
-molecule = "H₂O"
+mol = molecule("H₂O")
 basis = "sto-3g"
 
 @show molecule
 @show basis
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(; molecule, basis)
+(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(mol; basis)
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(state))

@@ -1,17 +1,16 @@
 """
-Source: https://github.com/FermiQC/Fermi.jl/discussions/117
-
-Credit to: Gustavo Aroeira (https://github.com/gustavojra)
-"""
-function molecular_orbital_hamiltonian_coefficients(;
-  molecule,
+#Source: https://github.com/FermiQC/Fermi.jl/discussions/117
+#
+#Credit to: Gustavo Aroeira (https://github.com/gustavojra)
+#"""
+function molecular_orbital_hamiltonian_coefficients(mol::Molecule;
   basis="sto-3g",
-  diis=diis(Molecule(molecule)),
-  oda=oda(Molecule(molecule))
+  diis= true, 
+  oda = true, 
 )
-
+  
   @suppress begin
-    Fermi.Options.set("molstring", ITensorChemistry.molecule(Molecule(molecule)))
+    Fermi.Options.set("molstring", parse_molecule(mol))
     Fermi.Options.set("basis", basis)
     Fermi.Options.set("diis", diis)
     Fermi.Options.set("oda", oda)
@@ -32,20 +31,19 @@ function molecular_orbital_hamiltonian_coefficients(;
   return (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy)
 end
 
-
-function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
+function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; cutoff = 1e-15)
   # Representation of the second quantized quantum chemistry Hamiltonian.
   hamiltonian = OpSum()
   hamiltonian += nuclear_energy, "Id", 1
   nα = size(hα, 1)
   for i in 1:nα, j in 1:nα
-    if norm(hα[i, j]) > 1e-15
+    if norm(hα[i, j]) > cutoff
       hamiltonian .+= hα[i, j], "c†↑", i, "c↑", j
       hamiltonian .+= hα[i, j], "c†↓", i, "c↓", j
     end
   end
   for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα
-    if norm(gα[i, j, k, l]) > 1e-15
+    if norm(gα[i, j, k, l]) > cutoff
       if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
         hamiltonian .+= gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
         hamiltonian .+= gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
@@ -111,8 +109,8 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltoni
   return hamiltonian
 end
 
-function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; sitetype::String = "Electron", kwargs...)
-  (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy) = molecular_orbital_hamiltonian_coefficients(; kwargs...)
+function molecular_orbital_hamiltonian(mol::Molecule, nsub_hamiltonians=nothing; sitetype::String = "Electron", kwargs...)
+  (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy) = molecular_orbital_hamiltonian_coefficients(mol; kwargs...)
 
   if isnothing(nsub_hamiltonians)
     hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
@@ -126,8 +124,14 @@ function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; sitetype::Stri
   state = [occ_to_state[n] for n in αocc_state]
   
   if sitetype == "Fermion"
-    hamiltonian = electron_to_fermion(hamiltonian)
     state = electron_to_fermion(state)
+    hamiltonian = electron_to_fermion(hamiltonian)
+    return (; hamiltonian, state, hartree_fock_energy)
+  
+  elseif sitetype == "Qubit"
+    state = electron_to_fermion(state) 
+    hamiltonian = electron_to_fermion(hamiltonian)
+    hamiltonian = jordanwigner(hamiltonian)
     return (; hamiltonian, state, hartree_fock_energy)
   end
   return (; hamiltonian, state, hartree_fock_energy)
