@@ -44,19 +44,17 @@ setmaxdim!(sweeps, 10,20,30,40,50,100)
 setcutoff!(sweeps, 1e-8)
 setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
 
-for r in r⃗
+function energy_at_bond(r)
   # define molecule geometry
   molecule = Molecule([("H", 0.0, 0.0, 0.0), 
                        ("H",   r, 0.0, 0.0)])
-                  
+  
   # build electronic hamiltonian and solve HF
   (; hamiltonian, hartree_fock_state, hartree_fock_energy) = 
-       molecular_orbital_hamiltonian(; molecule, 
-                                       basis = "sto-3g, 
-                                       diis = false, 
-                                       oda = false)
-  
-  # build Hamiltonian MPO
+    molecular_orbital_hamiltonian(; molecule, 
+                                    basis = "sto-3g", 
+                                    diis = false, 
+                                    oda = false)
   H = MPO(hamiltonian, s)
   
   # initialize MPS to HF state
@@ -64,10 +62,17 @@ for r in r⃗
   
   # run dmrg
   dmrg_energy, _ = dmrg(H, ψhf, sweeps; outputlevel = 0)
+  return hartree_fock_energy, dmrg_energy
+end
+
+energies = []
+for r in r⃗
+  push!(energies, energy_at_bond(r))
 end
 ```
-
-![alt text](examples/dissociation.png)
+<p align="center">
+<img src='examples/dissociation.png' width='600'>
+</p>
 
 ### Jordan-Wigner transformation
 
