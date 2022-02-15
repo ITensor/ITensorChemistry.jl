@@ -25,7 +25,6 @@ include("pauli.jl")
 include("qubitmaps.jl")
 
 export 
-  @MoleculeName_str,
   Atom,
   Molecule,
   atom,

@@ -22,36 +22,81 @@ julia> using Pkg
 julia> Pkg.add(; url="https://github.com/mtfishman/ITensorChemistry.jl")
 ```
 
-## Example usage
+## Examples
 
-Run DMRG on a specified molecule in the molecular orbital basis:
+### Dissociation energies
+
+
+```julia
+using ITensors
+using ITensorChemistry
+using Plots
+
+# bond distances
+r⃗ = 0.3:0.03:3.0
+
+# hilbert space
+s = siteinds("Electron", 2; conserve_qns=true)
+
+# dmrg params
+sweeps = Sweeps(10)
+setmaxdim!(sweeps, 10,20,30,40,50,100)
+setcutoff!(sweeps, 1e-8)
+setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
+
+for r in r⃗
+  # define molecule geometry
+  molecule = Molecule([("H", 0.0, 0.0, 0.0), 
+                       ("H",   r, 0.0, 0.0)])
+                  
+  # build electronic hamiltonian and solve HF
+  (; hamiltonian, hartree_fock_state, hartree_fock_energy) = 
+       molecular_orbital_hamiltonian(; molecule, 
+                                       basis = "sto-3g, 
+                                       diis = false, 
+                                       oda = false)
+  
+  # build Hamiltonian MPO
+  H = MPO(hamiltonian, s)
+  
+  # initialize MPS to HF state
+  ψhf = MPS(s, hartree_fock_state)
+  
+  # run dmrg
+  dmrg_energy, _ = dmrg(H, ψhf, sweeps; outputlevel = 0)
+end
+```
+
+![alt text](examples/dissociation.png)
+
+### Jordan-Wigner transformation
+
 ```julia
 using ITensors
 using ITensorChemistry
 
-mol = molecule("N₂")
+# Nitrogen molecule
+molecule = Molecule("N₂")
 basis = "sto-3g"
-
 @show molecule
-@show basis
 
-(; hamiltonian, state, hartree_fock_energy) = molecular_orbital_hamiltonian(mol; basis)
+(; hamiltonian, hartree_fock_state, hartree_fock_energy) =
+  molecular_orbital_hamiltonian(; molecule, basis)
+println("Number of orbitals = ", length(hartree_fock_state))
+println("Number of fermionic operators = ", length(hamiltonian))
+println("Hartree-Fock state |HF⟩ = |",prod(string.(hartree_fock_state)),"⟩")
 
-println("Basis set size = ", length(state))
-
-s = siteinds("Electron", length(state); conserve_qns=true)
-H = MPO(hamiltonian, s)
-ψhf = MPS(s, state)
-
-@show inner(ψhf, H, ψhf)
-@show hartree_fock_energy
-
-sweeps = Sweeps(10)
-setmaxdim!(sweeps, 100, 200)
-setcutoff!(sweeps, 1e-6)
-setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
-dmrg_energy, ψ = dmrg(H, ψhf, sweeps)
-
-@show dmrg_energy, hartree_fock_energy
-@show dmrg_energy < hartree_fock_energy
+qubit_hamiltonian = jordanwigner(hamiltonian)
+qubit_state = jordanwigner(hartree_fock_state)
+println("Number of qubit operators = ", length(qubit_hamiltonian))
+println("Hartree-Fock state |HF⟩ = |",prod(string.(qubit_state)),"⟩") 
+# -------------------------------------------------------------------------- 
+#  molecule = Molecule
+#   Atom 1: N,   r⃗ = (0.0, 0.0, 0.550296)
+#   Atom 2: N,   r⃗ = (0.0, 0.0, -0.550296)
+#  Number of orbitals = 10
+#  Number of fermionic operators = 14181
+#  |HF⟩ = |4444444111⟩
+#  Number of qubit operators = 17005
+#  |HF⟩ = |22222222222222111111⟩
 ```

@@ -1,19 +1,19 @@
 using ITensors
 using ITensorChemistry
 
-mol = molecule("H₂O")
+molecule = Molecule("H₂O")
 basis = "sto-3g"
 
 @show molecule
 @show basis
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(mol; basis)
+(; hamiltonian, hartree_fock_state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(; molecule, basis)
 println("Hartree-Fock complete")
 
-println("Basis set size = ", length(state))
+println("Basis set size = ", length(hartree_fock_state))
 
-s = siteinds("Electron", length(state); conserve_qns=true)
+s = siteinds("Electron", length(hartree_fock_state); conserve_qns=true)
 
 println("\nConstruct MPO")
 
@@ -22,7 +22,7 @@ println("MPO constructed")
 
 @show maxlinkdim(H)
 
-ψhf = MPS(s, state)
+ψhf = MPS(s, hartree_fock_state)
 
 @show inner(ψhf, H, ψhf)
 @show hartree_fock_energy

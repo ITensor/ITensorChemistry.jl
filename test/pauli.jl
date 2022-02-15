@@ -7,7 +7,7 @@ using Test
   P = ITensorChemistry.pauli("X")
   @test length(P) == 1
   @test ITensorChemistry.coefficient(P) ≈ 1.0
-  @test ITensorChemistry.operator(P) == "X"
+  @test ITensorChemistry.operator(P) == 'X'
 
   P = ITensorChemistry.pauli(im,"X")
   @test ITensorChemistry.coefficient(P) ≈ im
@@ -15,11 +15,11 @@ using Test
   P = ITensorChemistry.pauli("XYZ")
   @test length(P) == 3
   @test ITensorChemistry.operator(P) == "XYZ"
-  @test P[1] == "X"
-  @test P[2] == "Y"
-  @test P[3] == "Z"
+  @test P[1] == 'X' 
+  @test P[2] == 'Y'
+  @test P[3] == 'Z'
   
-  q = ["X","Y","Z"]
+  q = ['X','Y','Z']
   for (i,p) in enumerate(P)
     @test p == q[i]
   end
@@ -27,7 +27,7 @@ using Test
   P = ITensorChemistry.pauli("XYZ")
   ITensorChemistry.resize!(P,10)
   for i in 4:10
-    @test P[i] == "I"
+    @test P[i] == 'I'
   end
 end
 
@@ -40,34 +40,34 @@ end
   
   P = X * X
   @test ITensorChemistry.coefficient(P) ≈ 1
-  @test ITensorChemistry.operator(P) == "I"
+  @test ITensorChemistry.operator(P) == 'I'
   P = Y * Y
   @test ITensorChemistry.coefficient(P) ≈ 1
-  @test ITensorChemistry.operator(P) == "I"
+  @test ITensorChemistry.operator(P) == 'I'
   P = Z * Z
   @test ITensorChemistry.coefficient(P) ≈ 1
-  @test ITensorChemistry.operator(P) == "I"
+  @test ITensorChemistry.operator(P) == 'I'
   
   P = X * Y
   @test ITensorChemistry.coefficient(P) ≈ im
-  @test ITensorChemistry.operator(P) == "Z"
+  @test ITensorChemistry.operator(P) == 'Z'
   P = Y * X
   @test ITensorChemistry.coefficient(P) ≈ -im
-  @test ITensorChemistry.operator(P) == "Z"
+  @test ITensorChemistry.operator(P) == 'Z'
 
   P = Y * Z
   @test ITensorChemistry.coefficient(P) ≈ im
-  @test ITensorChemistry.operator(P) == "X"
+  @test ITensorChemistry.operator(P) == 'X'
   P = Z * Y
   @test ITensorChemistry.coefficient(P) ≈ -im
-  @test ITensorChemistry.operator(P) == "X"
+  @test ITensorChemistry.operator(P) == 'X'
 
   P = Z * X
   @test ITensorChemistry.coefficient(P) ≈ im
-  @test ITensorChemistry.operator(P) == "Y"
+  @test ITensorChemistry.operator(P) == 'Y'
   P = X * Z
   @test ITensorChemistry.coefficient(P) ≈ -im
-  @test ITensorChemistry.operator(P) == "Y"
+  @test ITensorChemistry.operator(P) == 'Y'
 
 
   A = ITensorChemistry.pauli(0.5,"YZXX")

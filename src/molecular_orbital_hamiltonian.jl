@@ -3,14 +3,15 @@
 #
 #Credit to: Gustavo Aroeira (https://github.com/gustavojra)
 #"""
-function molecular_orbital_hamiltonian_coefficients(mol::Molecule;
+function molecular_orbital_hamiltonian_coefficients(;
+  molecule,
   basis="sto-3g",
   diis= true, 
   oda = true, 
 )
   
   @suppress begin
-    Fermi.Options.set("molstring", parse_molecule(mol))
+    Fermi.Options.set("molstring", parse_molecule(molecule))
     Fermi.Options.set("basis", basis)
     Fermi.Options.set("diis", diis)
     Fermi.Options.set("oda", oda)
@@ -109,8 +110,8 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltoni
   return hamiltonian
 end
 
-function molecular_orbital_hamiltonian(mol::Molecule, nsub_hamiltonians=nothing; sitetype::String = "Electron", kwargs...)
-  (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy) = molecular_orbital_hamiltonian_coefficients(mol; kwargs...)
+function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; sitetype::String = "Electron", kwargs...)
+  (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy) = molecular_orbital_hamiltonian_coefficients(; kwargs...)
 
   if isnothing(nsub_hamiltonians)
     hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
@@ -121,20 +122,20 @@ function molecular_orbital_hamiltonian(mol::Molecule, nsub_hamiltonians=nothing;
   nα = size(hα, 1)
   αocc_state = [i in 1:nαocc ? 1 : 0 for i in 1:nα]
   occ_to_state = Dict([0 => 1, 1 => 4])
-  state = [occ_to_state[n] for n in αocc_state]
+  hartree_fock_state = [occ_to_state[n] for n in αocc_state]
   
   if sitetype == "Fermion"
-    state = electron_to_fermion(state)
+    hartree_fock_state = electron_to_fermion(hartree_fock_state)
     hamiltonian = electron_to_fermion(hamiltonian)
-    return (; hamiltonian, state, hartree_fock_energy)
+    return (; hamiltonian, hartree_fock_state, hartree_fock_energy)
   
   elseif sitetype == "Qubit"
-    state = electron_to_fermion(state) 
-    hamiltonian = electron_to_fermion(hamiltonian)
+    hartree_fock_state = jordanwigner(hartree_fock_state) 
     hamiltonian = jordanwigner(hamiltonian)
-    return (; hamiltonian, state, hartree_fock_energy)
+    return (; hamiltonian, hartree_fock_state, hartree_fock_energy)
   end
-  return (; hamiltonian, state, hartree_fock_energy)
+  
+  return (; hamiltonian, hartree_fock_state, hartree_fock_energy)
 end
 
 

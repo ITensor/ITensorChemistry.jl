@@ -3,15 +3,15 @@ using ITensorChemistry
 using Test
 
 @testset "electron hamiltonian" begin
-  mol = molecule("H₂")
+  molecule = Molecule("H₂")
   basis = "sto-3g"
   
-  (; hamiltonian, state, hartree_fock_energy) = 
-    molecular_orbital_hamiltonian(mol; basis, diis = false, oda = false)
+  (; hamiltonian, hartree_fock_state, hartree_fock_energy) = 
+    molecular_orbital_hamiltonian(; molecule, basis, diis = false, oda = false)
 
-  s = siteinds("Electron", length(state); conserve_qns=true)
+  s = siteinds("Electron", length(hartree_fock_state); conserve_qns=true)
   H = MPO(hamiltonian, s)
-  ψhf = MPS(s, state)
+  ψhf = MPS(s, hartree_fock_state)
 
   @test inner(ψhf, H, ψhf) ≈ hartree_fock_energy
   sweeps = Sweeps(10)
@@ -23,26 +23,27 @@ using Test
 end
 
 @testset "fermion hamiltonian" begin
-  mol = molecule("H₂")
+  molecule = Molecule("H₂")
   basis = "sto-3g"
-  (; hamiltonian, state, hartree_fock_energy) = 
-    molecular_orbital_hamiltonian(mol; basis, diis = false, oda = false)
+  (; hamiltonian, hartree_fock_state, hartree_fock_energy) = 
+    molecular_orbital_hamiltonian(; molecule, basis, diis = false, oda = false)
   
-  se = siteinds("Electron", length(state); conserve_qns=false)
+  se = siteinds("Electron", length(hartree_fock_state); conserve_qns=false)
   He = MPO(hamiltonian, se)
-  ψe = MPS(se, state)
+  ψe = MPS(se, hartree_fock_state)
 
   @test inner(ψe, He, ψe) ≈ hartree_fock_energy
 
-  (; hamiltonian, state, hartree_fock_energy) = 
-    molecular_orbital_hamiltonian(mol; basis, 
-                                       diis = false, 
-                                       oda = false, 
-                                       sitetype = "Fermion")
+  (; hamiltonian, hartree_fock_state, hartree_fock_energy) = 
+    molecular_orbital_hamiltonian(; molecule,
+                                    basis, 
+                                    diis = false, 
+                                    oda = false, 
+                                    sitetype = "Fermion")
 
-  sf = siteinds("Fermion", length(state); conserve_qns=false)
+  sf = siteinds("Fermion", length(hartree_fock_state); conserve_qns=false)
   Hf = MPO(hamiltonian, sf)
-  ψf = MPS(sf, state)
+  ψf = MPS(sf, hartree_fock_state)
   
   @test inner(ψf, Hf, ψf) ≈ hartree_fock_energy
   sweeps = Sweeps(10)

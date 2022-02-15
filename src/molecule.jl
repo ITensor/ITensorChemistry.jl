@@ -3,9 +3,6 @@ struct MoleculeName{M} end
 MoleculeName(mn::Symbol) = MoleculeName{mn}()
 MoleculeName(mn::String) = MoleculeName(Symbol(mn))
 
-molecule(mol::String) = molecule(MoleculeName(mol))
-molecule(::MoleculeName{mn}) where {mn} = error("`molecule` not implemented for $mn")
-
 macro MoleculeName_str(s)
     :(MoleculeName{$(Expr(:quote, Symbol(s)))})
 end
@@ -13,45 +10,46 @@ end
 
 struct Atom
   name::String
-  coordinate::NTuple{3, Real}
+  coordinates::NTuple{3, Real}
 end
 
 # attributes
 name(atom::Atom)       = atom.name
-coordinate(atom::Atom) = atom.coordinate
+coordinates(atom::Atom) = atom.coordinates
 
 # generate an atom with coordinates
-atom(name::String, coordinate::NTuple) = 
-  Atom(name, coordinate)
+#Atom(name::String, coordinate::NTuple) = 
+#  Atom(name, coordinate)
 
-atom(name::String, x, y, z) = 
+Atom(name::String, x, y, z) = 
   Atom(name, (x, y, z))
 
 # generate an atom at r = (0,0,0)
-atom(name::String) = 
+Atom(name::String) = 
   Atom(name, (0.0, 0.0, 0.0))
-
 
 struct Molecule
   atoms::Vector{Atom}
 end
 
+atoms(molecule::Molecule) = 
+  molecule.atoms
+
 # empty molecule
-molecule() = Molecule(Atom[])
+Molecule() = Molecule(Atom[])
 
-# molecule composed by a set of atoms
-molecule(atoms::Vector{Atom}) = 
-  Molecule(atoms)
+Molecule(a⃗::Atom...) = 
+  Molecule([a⃗...])
 
-molecule(a⃗::Atom...) = 
-  molecule([a⃗...])
-
+Molecule(mol::String) = Molecule(MoleculeName(mol))
+Molecule(::MoleculeName{mn}) where {mn} = error("`molecule` not implemented for $mn")
 
 # parse atomic data from vectors of tuple/vectors
-molecule(atoms::Vector{<:Tuple})  = 
-  molecule([atom(a[1], a[2:4]) for a in atoms])
-molecule(atoms::Vector{<:Vector}) = 
-  molecule(Tuple.(atoms))
+Molecule(atoms::Vector{<:Tuple})  = 
+  Molecule([Atom(a[1], a[2:4]) for a in atoms])
+
+Molecule(atoms::Vector{<:Vector}) = 
+  Molecule(Tuple.(atoms))
 
 Base.length(mol::Molecule) = 
   length(mol.atoms)
@@ -66,7 +64,7 @@ function parse_molecule(mol::Molecule)
   molstr = ""
   for a in 1:length(mol)
     atomname = name(mol[a])
-    atomcoords = Float64.(coordinate(mol[a]))
+    atomcoords = Float64.(coordinates(mol[a]))
     molstr *= atomname 
     for r in atomcoords
       molstr *= " " * string(r)
@@ -76,4 +74,14 @@ function parse_molecule(mol::Molecule)
   return molstr
 end
 
+function Base.show(io::IO, molecule::Molecule) 
+  a⃗ = atoms(molecule)
+  println(io, typeof(molecule))
+  for (i,a) in enumerate(a⃗)
+    print(io, "Atom ",i,": ",name(a))
+    x,y,z = coordinates(a)
+    print(io, ",   r⃗ = (",x,", ",y,", ",z,")")
+    println(io)
+  end
+end
 
