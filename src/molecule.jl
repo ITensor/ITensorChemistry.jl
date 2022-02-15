@@ -17,10 +17,6 @@ end
 name(atom::Atom)       = atom.name
 coordinates(atom::Atom) = atom.coordinates
 
-# generate an atom with coordinates
-#Atom(name::String, coordinate::NTuple) = 
-#  Atom(name, coordinate)
-
 Atom(name::String, x, y, z) = 
   Atom(name, (x, y, z))
 
@@ -41,7 +37,7 @@ Molecule() = Molecule(Atom[])
 Molecule(a⃗::Atom...) = 
   Molecule([a⃗...])
 
-Molecule(mol::String) = Molecule(MoleculeName(mol))
+Molecule(molecule::String) = Molecule(MoleculeName(molecule))
 Molecule(::MoleculeName{mn}) where {mn} = error("`molecule` not implemented for $mn")
 
 # parse atomic data from vectors of tuple/vectors
@@ -51,20 +47,22 @@ Molecule(atoms::Vector{<:Tuple})  =
 Molecule(atoms::Vector{<:Vector}) = 
   Molecule(Tuple.(atoms))
 
-Base.length(mol::Molecule) = 
-  length(mol.atoms)
-Base.getindex(mol::Molecule, i::Int) = 
-  mol.atoms[i] 
-Base.push!(mol::Molecule, atom::Atom) = 
-  push!(mol.atoms, atom)
+Base.length(molecule::Molecule) = 
+  length(atoms(molecule))
+
+Base.getindex(molecule::Molecule, i::Int) = 
+  atoms(molecule)[i] 
+
+Base.push!(molecule::Molecule, atom::Atom) = 
+  push!(molecule.atoms, atom)
 
 # parse data contained in `mol` to generate
 # an input string encoding for HF in Fermi.jl
-function parse_molecule(mol::Molecule)
+function parse_molecule(molecule::Molecule)
   molstr = ""
-  for a in 1:length(mol)
-    atomname = name(mol[a])
-    atomcoords = Float64.(coordinates(mol[a]))
+  for a in 1:length(molecule)
+    atomname = name(molecule[a])
+    atomcoords = Float64.(coordinates(molecule[a]))
     molstr *= atomname 
     for r in atomcoords
       molstr *= " " * string(r)

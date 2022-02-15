@@ -7,7 +7,6 @@ using Suppressor
 import Combinatorics: levicivita
 
 import Base: 
-  sign, 
   *, 
   length, 
   getindex, 
@@ -15,8 +14,7 @@ import Base:
   iterate, 
   copy, 
   push!, 
-  resize!,
-  product
+  resize!
 
 include("molecule.jl")
 include("molecules.jl")
@@ -27,8 +25,6 @@ include("qubitmaps.jl")
 export 
   Atom,
   Molecule,
-  atom,
-  molecule,
   molecular_orbital_hamiltonian,
   jordanwigner
 end

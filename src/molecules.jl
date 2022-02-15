@@ -10,12 +10,13 @@ Molecule(::MoleculeName"N₂") =
 Molecule(m::MoleculeName"nitrogen") = Molecule(alias(m))
 alias(::MoleculeName"nitrogen") = MoleculeName"N₂"()
 
+
 Molecule(::MoleculeName"LiH") = 
   Molecule([("Li", 0.00, 0.00, 0.0000),
             ("H" , 0.00, 0.00, 1.5949)])
+
 Molecule(m::MoleculeName"lithium-hydride") = Molecule(alias(m))
 alias(::MoleculeName"lithium-hydride") = MoleculeName"N₂"()
-
 
 
 Molecule(::MoleculeName"H₂O") = 
@@ -26,6 +27,7 @@ Molecule(::MoleculeName"H₂O") =
 Molecule(m::MoleculeName"water") = Molecule(alias(m))
 alias(::MoleculeName"water") = MoleculeName"H₂O"()
 
+
 Molecule(::MoleculeName"BeH₂") = 
   Molecule([("Be", 0.00, 0.00,  0.0000),  
             ("H",  0.00, 0.00,  1.3264),
@@ -33,8 +35,6 @@ Molecule(::MoleculeName"BeH₂") =
 
 Molecule(m::MoleculeName"beryllium-dihydride") = Molecule(alias(m))
 alias(::MoleculeName"beryllium-dihydride") = MoleculeName"BeH₂"()
-
-
 
 
 Molecule(::MoleculeName"ammonia") = 
@@ -47,12 +47,12 @@ Molecule(m::MoleculeName"NH₃") = Molecule(alias(m))
 alias(::MoleculeName"NH₃") = MoleculeName"ammonia"()
 
 
-
 Molecule(::MoleculeName"formaldehyde") = 
   Molecule([("O",	0.00,  0.0000000,  0.6744930),
             ("C",	0.00,  0.0000000, -0.5297240),
             ("H",	0.00,  0.9347280, -1.1087990),
             ("H",	0.00, -0.9347280, -1.1087990)])
+
 Molecule(m::MoleculeName"CH₂O") = Molecule(alias(m))
 alias(::MoleculeName"CH₂O") = MoleculeName"formaldehyde"()
 
@@ -63,8 +63,10 @@ Molecule(::MoleculeName"methane") =
             ("H",	-0.6268910,	-0.6268910,	 0.6268910),
             ("H",	-0.6268910,	 0.6268910,	-0.6268910),
             ("H",	 0.6268910,	-0.6268910,	-0.6268910)])
+
 Molecule(m::MoleculeName"CH₄") = Molecule(alias(m))
 alias(::MoleculeName"CH₄") = MoleculeName"methane"()
+
 
 Molecule(::MoleculeName"ethanol") = 
   Molecule([("C",	 1.1615830,	-0.4067550,	 0.0000000),  
@@ -76,6 +78,7 @@ Molecule(::MoleculeName"ethanol") =
             ("H",	 1.1223470,	-1.0398290,	-0.8811340),
             ("H",	 0.0561470,	 1.1935530,	 0.8808960),
             ("H",	 0.0561470,	 1.1935530,	-0.8808960)])
+
 Molecule(m::MoleculeName"C₂H₅OH") = Molecule(alias(m))
 alias(::MoleculeName"C₂H₅OH") = MoleculeName"ethanol"()
 
@@ -93,6 +96,7 @@ Molecule(::MoleculeName"benzene") =
             ("H",	 0.0000000,	-2.4695880,	0.00),
             ("H",	-2.1387260,	-1.2347940,	0.00),
             ("H",	-2.1387260,	 1.2347940,	0.00)])
+
 Molecule(m::MoleculeName"C₆H₆") = Molecule(alias(m))
 alias(::MoleculeName"C₆H₆") = MoleculeName"benzene"()
 

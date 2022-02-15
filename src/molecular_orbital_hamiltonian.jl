@@ -127,14 +127,10 @@ function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; sitetype::Stri
   if sitetype == "Fermion"
     hartree_fock_state = electron_to_fermion(hartree_fock_state)
     hamiltonian = electron_to_fermion(hamiltonian)
-    return (; hamiltonian, hartree_fock_state, hartree_fock_energy)
-  
   elseif sitetype == "Qubit"
     hartree_fock_state = jordanwigner(hartree_fock_state) 
     hamiltonian = jordanwigner(hamiltonian)
-    return (; hamiltonian, hartree_fock_state, hartree_fock_energy)
   end
-  
   return (; hamiltonian, hartree_fock_state, hartree_fock_energy)
 end
 

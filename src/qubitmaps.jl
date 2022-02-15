@@ -6,7 +6,7 @@ JORDAN-WIGNER TRANSFORMATION
 aⱼ  = - (∏ᵢ₌₁ʲ  Zᵢ) (Xᵢ + iYᵢ)/2
 aⱼ† = - (∏ᵢ₌₁ʲ  Zᵢ) (Xᵢ - iYᵢ)/2
 """
-function jordanwigner(H::OpSum; threshold = 1e-20)
+function jordanwigner(H::OpSum; cutoff = 1e-20)
   # check if H needs to be transformed into Fermions
   Hf = _is_electronic(H) ? electron_to_fermion(H) : H  
   Hq = OpSum()
@@ -23,7 +23,7 @@ function jordanwigner(H::OpSum; threshold = 1e-20)
   ITensors.sortmergeterms!(Hq)
   prunedHq = OpSum()
   for k in 1:length(Hq)
-    norm(ITensors.coef(Hq[k])) > threshold && push!(prunedHq, Hq[k])
+    norm(ITensors.coef(Hq[k])) > cutoff && push!(prunedHq, Hq[k])
   end
   return prunedHq
 end

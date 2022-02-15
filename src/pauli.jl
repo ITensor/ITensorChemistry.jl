@@ -10,20 +10,21 @@ pauli(c::Number, σ::String) = Pauli(c, σ)
 # grab the Pauli operator
 operator(p::Pauli) = 
   return length(p) == 1 ? only(p.σ) : p.σ
+
 operator(p::Pauli, n) = operator(p)[n]
 
 # grab the Pauli coefficient
 coefficient(p::Pauli) = p.c
 
 # number of single-qubit Paulis
-length(p::Pauli)      = length(p.σ)
+Base.length(p::Pauli)      = length(p.σ)
 
-copy(pauli::Pauli) =
+Base.copy(pauli::Pauli) =
   Pauli(coefficient(pauli), operator(pauli))
 
-getindex(p::Pauli, i::Int) = p.σ[i]
+Base.getindex(p::Pauli, i::Int) = p.σ[i]
 
-function setindex!(pauli::Pauli, s::Char, i::Int) 
+function Base.setindex!(pauli::Pauli, s::Char, i::Int) 
   σ = operator(pauli)
   σl = reduce(*, σ[1:i-1])
   σr = reduce(*, σ[i+1:end])

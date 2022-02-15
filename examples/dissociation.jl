@@ -45,14 +45,14 @@ for r in r⃗
   push!(Ehf, ehf)
   push!(Edmrg, edmrg)
 end
-#
-#pargs = (size = (800,400), dpi = 1000, margin=5Plots.mm, title = "Dissociation of Hydrogen Molecule",
-#         xlabel = "bond distance (au)", ylabel = "Ground State Energy",
-#         legend = :top, markersize = 4, marker = :circle, linewidth = 1,
-#         xguidefontsize=15, yguidefontsize=15, legendfontsize=12, titlefontsize=20,
-#         xtickfontsize=15, ytickfontsize=15) 
-#         
-#p = plot(r⃗, Ehf, label = "Hartree-Fock"; pargs...)
-#p = plot(p, r⃗, Edmrg, label = "DMRG"; pargs...)
-#savefig(p, "dissociation.png")
-#p
+
+pargs = (size = (800,400), dpi = 1000, margin=5Plots.mm, title = "Dissociation of Hydrogen Molecule",
+         xlabel = "bond distance (au)", ylabel = "Ground State Energy",
+         legend = :top, markersize = 4, marker = :circle, linewidth = 1,
+         xguidefontsize=15, yguidefontsize=15, legendfontsize=12, titlefontsize=20,
+         xtickfontsize=15, ytickfontsize=15) 
+         
+p = plot(r⃗, Ehf, label = "Hartree-Fock"; pargs...)
+p = plot(p, r⃗, Edmrg, label = "DMRG"; pargs...)
+savefig(p, "dissociation.png")
+p
