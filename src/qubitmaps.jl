@@ -28,7 +28,7 @@ function jordanwigner(H::OpSum; cutoff = 1e-20)
   return prunedHq
 end
 
-function jordanwigner(F::ITensors.MPOTerm)
+function jordanwigner(F::Scaled{C,Prod{Op}}) where {C}
 
   Fcoeff = ITensors.coef(F)
   Fops   = ITensors.ops(F)
@@ -36,7 +36,7 @@ function jordanwigner(F::ITensors.MPOTerm)
   Fsites = first.(ITensors.sites.(Fops))
  
   # return identity MPOTerm
-  Fops == ["Id"] && return ITensors.MPOTerm(1.0, "Id", 1)
+  Fops == ["Id"] && return 1.0 * Prod{Op}() * ("I", 1)
   
   oplist = []
   coefflist = []
