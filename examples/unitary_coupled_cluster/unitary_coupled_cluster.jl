@@ -1,11 +1,12 @@
 using ITensors
 using ITensorChemistry
+using ITensorParallel
 using OptimKit
 using Random
 using Zygote
 
 # General definitions
-ITensors.inner(ψ, Hs::Vector, ϕ; kwargs...) = sum([inner(ψ, H, ϕ; kwargs...) for H in Hs])
+ITensors.inner(ψ, Hs::Vector, ϕ; kwargs...) = sum([inner(ψ', H, ϕ; kwargs...) for H in Hs])
 ⊗(x...) = kron(reverse(x)...)
 
 molecule = "H₂O"
@@ -14,13 +15,14 @@ basis = "sto-3g"
 @show molecule
 @show basis
 
-# Split the Hamiltonian into `nparts` sub-Hamiltonians
+# Split Hamiltonian into nparts
 nparts = 2
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(
-  nparts; molecule, basis
-)
+hf = @time molecular_orbital_hamiltonian(molecule; basis)
+hamiltonian = hf.hamiltonian
+hartree_fock_state = hf.hartree_fock_state
+hartree_fock_energy = hf.hartree_fock_energy
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(state))
@@ -29,9 +31,10 @@ s = siteinds("Electron", length(state); conserve_qns=true)
 
 println("\nConstruct MPO")
 
+hamiltonians = partition(hamiltonian, nparts)
 H = Vector{MPO}(undef, nparts)
 @time for n in 1:nparts
-  H[n] = splitblocks(linkinds, MPO(hamiltonian[n], s))
+  H[n] = splitblocks(linkinds, MPO(hamiltonians[n], s))
 end
 println("MPO constructed")
 
@@ -39,7 +42,7 @@ println("MPO constructed")
 
 ψhf = MPS(s, state)
 
-@show inner(ψhf, H, ψhf)
+@show inner(ψhf', H, ψhf)
 @show hartree_fock_energy
 
 sweeps = Sweeps(4)
@@ -130,7 +133,7 @@ t0 = [t0_1e; t0_2e]
 U0 = ucc_circuit(s, t0)
 
 U0ψhf = apply(U0, ψhf)
-@show inner(U0ψhf, H, U0ψhf)
+@show inner(U0ψhf', H, U0ψhf)
 
 @show loss(t0)
 

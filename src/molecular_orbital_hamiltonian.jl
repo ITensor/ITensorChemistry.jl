@@ -3,11 +3,12 @@
 #
 #Credit to: Gustavo Aroeira (https://github.com/gustavojra)
 #"""
-function molecular_orbital_hamiltonian_coefficients(;
-  molecule, basis="sto-3g", diis=true, oda=true
+function molecular_orbital_hamiltonian_coefficients(
+  molecule;
+  basis="sto-3g", diis=true, oda=true
 )
   @suppress begin
-    Fermi.Options.set("molstring", xyz_string(molecule))
+    Fermi.Options.set("molstring", xyz_string(Molecule(molecule)))
     Fermi.Options.set("basis", basis)
     Fermi.Options.set("diis", diis)
     Fermi.Options.set("oda", oda)
@@ -35,90 +36,32 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; atol=1e-15)
   nα = size(hα, 1)
   for i in 1:nα, j in 1:nα
     if norm(hα[i, j]) > atol
-      hamiltonian .+= hα[i, j], "c†↑", i, "c↑", j
-      hamiltonian .+= hα[i, j], "c†↓", i, "c↓", j
+      hamiltonian += hα[i, j], "c†↑", i, "c↑", j
+      hamiltonian += hα[i, j], "c†↓", i, "c↓", j
     end
   end
   for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα
     if norm(gα[i, j, k, l]) > atol
       if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
-        hamiltonian .+= gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
-        hamiltonian .+= gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
+        hamiltonian += gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
+        hamiltonian += gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
       end
-      hamiltonian .+= gα[i, j, k, l], "c†↑", i, "c†↓", j, "c↓", k, "c↑", l
-      hamiltonian .+= gα[i, j, k, l], "c†↓", i, "c†↑", j, "c↑", k, "c↓", l
-    end
-  end
-  return hamiltonian
-end
-
-function proc(p, ptot, i)
-  return p == mod1(i, ptot)
-end
-
-# i ≥ j
-f(i, j) = (i - 1) * i ÷ 2 + j
-function proc(p, ptot, i, j)
-  if i ≤ j
-    return p == mod1(f(j, i), ptot)
-  end
-  return p == mod1(f(i, j), ptot)
-end
-
-function proc_sorted(p, ptot, i, j, k, l)
-  if j == k
-    return proc(p, ptot, j)
-  end
-  return proc(p, ptot, i, j)
-end
-
-function proc(p, ptot, i, j, k, l)
-  return proc_sorted(p, ptot, sort((i, j, k, l))...)
-end
-
-# From: https://arxiv.org/abs/2103.09976
-function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltonians)
-  # Representation of the second quantized quantum chemistry Hamiltonian.
-  # Split over `nsub_hamiltonians` to be parallelized over.
-  hamiltonian = [OpSum() for _ in 1:nsub_hamiltonians]
-  hamiltonian[1] += nuclear_energy, "Id", 1
-  nα = size(hα, 1)
-  for p in 1:nsub_hamiltonians
-    for i in 1:nα, j in 1:nα
-      pij = 1 / 2 * (proc(p, nsub_hamiltonians, i) + proc(p, nsub_hamiltonians, j))
-      if pij ≠ 0 && norm(hα[i, j]) > 1e-10
-        hamiltonian[p] .+= pij * hα[i, j], "c†↑", i, "c↑", j
-        hamiltonian[p] .+= pij * hα[i, j], "c†↓", i, "c↓", j
-      end
-    end
-    for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα
-      pijkl = proc(p, nsub_hamiltonians, i, j, k, l)
-      if pijkl ≠ 0 && norm(gα[i, j, k, l]) > 1e-10
-        if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
-          hamiltonian[p] .+= gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
-          hamiltonian[p] .+= gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
-        end
-        hamiltonian[p] .+= gα[i, j, k, l], "c†↑", i, "c†↓", j, "c↓", k, "c↑", l
-        hamiltonian[p] .+= gα[i, j, k, l], "c†↓", i, "c†↑", j, "c↑", k, "c↓", l
-      end
+      hamiltonian += gα[i, j, k, l], "c†↑", i, "c†↓", j, "c↓", k, "c↑", l
+      hamiltonian += gα[i, j, k, l], "c†↓", i, "c†↑", j, "c↑", k, "c↓", l
     end
   end
   return hamiltonian
 end
 
 function molecular_orbital_hamiltonian(
-  nsub_hamiltonians=nothing; sitetype::String="Electron", kwargs...
+  molecule; sitetype::String="Electron", kwargs...
 )
-  res = molecular_orbital_hamiltonian_coefficients(; kwargs...)
+  res = molecular_orbital_hamiltonian_coefficients(molecule; kwargs...)
   hα, gα, nαocc, hartree_fock_energy, nuclear_energy = res.hα,
   res.gα, res.nαocc, res.hartree_fock_energy,
   res.nuclear_energy
 
-  if isnothing(nsub_hamiltonians)
-    hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
-  else
-    hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltonians)
-  end
+  hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
 
   nα = size(hα, 1)
   αocc_state = [i in 1:nαocc ? 1 : 0 for i in 1:nα]

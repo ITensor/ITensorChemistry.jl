@@ -50,11 +50,14 @@ function energy_at_bond(r)
                        ("H",   r, 0.0, 0.0)])
   
   # build electronic hamiltonian and solve HF
-  (; hamiltonian, hartree_fock_state, hartree_fock_energy) = 
-    molecular_orbital_hamiltonian(; molecule, 
-                                    basis = "sto-3g", 
-                                    diis = false, 
-                                    oda = false)
+  hf = molecular_orbital_hamiltonian(molecule;
+                                     basis = "sto-3g", 
+                                     diis = false, 
+                                     oda = false)
+  hamiltonian = hf.hamiltonian
+  hartree_fock_state = hf.hartree_fock_state
+  hartree_fock_energy = hf.hartree_fock_energy
+
   H = MPO(hamiltonian, s)
   
   # initialize MPS to HF state
@@ -85,8 +88,10 @@ molecule = Molecule("N₂")
 basis = "sto-3g"
 @show molecule
 
-(; hamiltonian, hartree_fock_state, hartree_fock_energy) =
-  molecular_orbital_hamiltonian(; molecule, basis)
+hf = molecular_orbital_hamiltonian(molecule; basis)
+hamiltonian = hf.hamiltonian
+hartree_fock_state = hf.hartree_fock_state
+
 println("Number of orbitals = ", length(hartree_fock_state))
 println("Number of fermionic operators = ", length(hamiltonian))
 println("Hartree-Fock state |HF⟩ = |",prod(string.(hartree_fock_state)),"⟩")

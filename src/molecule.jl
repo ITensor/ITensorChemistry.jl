@@ -24,6 +24,7 @@ Atom(name::String) = Atom(name, (0.0, 0.0, 0.0))
 struct Molecule
   atoms::Vector{Atom}
 end
+Molecule(molecule::Molecule) = molecule
 
 atoms(molecule::Molecule) = molecule.atoms
 

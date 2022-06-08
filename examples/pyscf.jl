@@ -39,23 +39,27 @@ n_occ = mf.mo_occ
 e_nuclear = mf.energy_nuc()
 
 # Create operators and MPO
-hamiltonian = OpSum()
-hamiltonian += e_nuclear, "Id", 1
-for i in 1:n, j in 1:n
-  hamiltonian .+= t[i, j], "Cdagup", i, "Cup", j
-  hamiltonian .+= t[i, j], "Cdagdn", i, "Cdn", j
-end
-for i in 1:n, j in 1:n, k in 1:n, l in 1:n
-  if norm(V[i, j, k, l]) > 1e-15
-    if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
-      hamiltonian .+= V[i, j, k, l], "Cdagup", i, "Cdagup", j, "Cup", k, "Cup", l
-      hamiltonian .+= V[i, j, k, l], "Cdagdn", i, "Cdagdn", j, "Cdn", k, "Cdn", l
-    end
-    hamiltonian .+= V[i, j, k, l], "Cdagup", i, "Cdagdn", j, "Cdn", k, "Cup", l
-    hamiltonian .+= V[i, j, k, l], "Cdagdn", i, "Cdagup", j, "Cup", k, "Cdn", l
+function chemistry_hamiltonian(; t, V, e_nuclear)
+  hamiltonian = OpSum()
+  hamiltonian += e_nuclear, "Id", 1
+  for i in 1:n, j in 1:n
+    hamiltonian += t[i, j], "Cdagup", i, "Cup", j
+    hamiltonian += t[i, j], "Cdagdn", i, "Cdn", j
   end
+  for i in 1:n, j in 1:n, k in 1:n, l in 1:n
+    if norm(V[i, j, k, l]) > 1e-15
+      if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
+        hamiltonian += V[i, j, k, l], "Cdagup", i, "Cdagup", j, "Cup", k, "Cup", l
+        hamiltonian += V[i, j, k, l], "Cdagdn", i, "Cdagdn", j, "Cdn", k, "Cdn", l
+      end
+      hamiltonian += V[i, j, k, l], "Cdagup", i, "Cdagdn", j, "Cdn", k, "Cup", l
+      hamiltonian += V[i, j, k, l], "Cdagdn", i, "Cdagup", j, "Cup", k, "Cdn", l
+    end
+  end
+  return hamiltonian
 end
 
+hamiltonian = chemistry_hamiltonian(; t, V, e_nuclear)
 s = siteinds("Electron", n; conserve_qns=true)
 H = MPO(hamiltonian, s)
 
@@ -73,12 +77,7 @@ println("Energy Error from MF MPS (Ha) ", abs(e_mf_mps - mf.e_tot))
 ψ0 = randomMPS(s, occupation_to_state.(n_occ); linkdims=40)
 @show inner(ψ0', H, ψ0)
 
-# DMRG Settings
-sweeps = Sweeps(10)
-setmaxdim!(sweeps, 100, 300)
-setcutoff!(sweeps, 1e-7)
-setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
-
 # Run DMRG
-e, ψ = dmrg(H, ψ0, sweeps)
+dmrg_params = (nsweeps=10, maxdim=[100, 300], cutoff=1e-7, noise=[1e-6, 1e-7, 1e-8, 0.0])
+e, ψ = dmrg(H, ψ0; dmrg_params...)
 println("DMRG Error ", abs(e - cisolver.e_tot))

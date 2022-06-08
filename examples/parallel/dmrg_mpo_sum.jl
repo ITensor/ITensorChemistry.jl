@@ -39,8 +39,8 @@ println("MPO constructed")
 
 ψhf = MPS(s, state)
 
-ITensors.inner(ψ, Hs::Vector, ϕ) = sum([inner(ψ, H, ϕ) for H in Hs])
-@show inner(ψhf, H, ψhf)
+ITensors.inner(ψ, Hs::Vector, ϕ) = sum([inner(ψ', H, ϕ) for H in Hs])
+@show inner(ψhf', H, ψhf)
 @show hartree_fock_energy
 
 sweeps = Sweeps(10)

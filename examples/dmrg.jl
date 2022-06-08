@@ -8,9 +8,11 @@ basis = "sto-3g"
 @show basis
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, hartree_fock_state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(;
-  molecule, basis
-)
+hf = @time molecular_orbital_hamiltonian(molecule; basis)
+hamiltonian = hf.hamiltonian
+hartree_fock_state = hf.hartree_fock_state
+hartree_fock_energy = hf.hartree_fock_energy
+
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(hartree_fock_state))
@@ -26,16 +28,12 @@ println("MPO constructed")
 
 ψhf = MPS(s, hartree_fock_state)
 
-@show inner(ψhf, H, ψhf)
+@show inner(ψhf', H, ψhf)
 @show hartree_fock_energy
-
-sweeps = Sweeps(10)
-setmaxdim!(sweeps, 100, 200)
-setcutoff!(sweeps, 1e-6)
-setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
 
 println("\nRunning DMRG")
 @show sweeps
 
-e, ψ = dmrg(H, ψhf, sweeps)
+dmrg_params = (nsweeps=10, maxdim=[100, 200], cutoff=1e-6, noise=[1e-6, 1e-7, 1e-8, 0.0])
+e, ψ = dmrg(H, ψhf; dmrg_params...)
 println("DMRG complete")
