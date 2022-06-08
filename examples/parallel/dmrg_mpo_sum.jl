@@ -5,6 +5,7 @@ using ITensorParallel
 ITensors.BLAS.set_num_threads(1)
 ITensors.Strided.disable_threads()
 ITensors.disable_threaded_blocksparse()
+ITensorChemistry.Fermi.TBLIS.set_num_threads(1)
 
 @show Threads.nthreads()
 
