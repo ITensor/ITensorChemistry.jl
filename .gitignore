@@ -11,3 +11,4 @@
 Manifest.toml
 benchmark/*.json
 docs/build/
+tmp*
