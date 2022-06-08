@@ -11,8 +11,8 @@ function jordanwigner(H::OpSum; atol=1e-20)
   Hf = _is_electronic(H) ? electron_to_fermion(H) : H
   Hq = OpSum()
   for k in 1:length(Hf)
-    if ITensors.name.(ITensors.ops(Hf[k])) == ["Id"]
-      Hq += ITensors.coef(Hf[k]), "Id", 1
+    if ITensors.name.(ITensors.terms(Hf[k])) == ["Id"]
+      Hq += ITensors.coefficient(Hf[k]), "Id", 1
     else
       jwops = jordanwigner(Hf[k])
       for j in 1:length(jwops)
@@ -20,17 +20,19 @@ function jordanwigner(H::OpSum; atol=1e-20)
       end
     end
   end
-  ITensors.sortmergeterms!(Hq)
+  Hq = ITensors.sortmergeterms(Hq)
   prunedHq = OpSum()
   for k in 1:length(Hq)
-    norm(ITensors.coef(Hq[k])) > atol && push!(prunedHq, Hq[k])
+    if norm(ITensors.coefficient(Hq[k])) > atol
+      prunedHq += Hq[k]
+    end
   end
   return prunedHq
 end
 
 function jordanwigner(F::Scaled{C,Prod{Op}}) where {C}
-  Fcoeff = ITensors.coef(F)
-  Fops = ITensors.ops(F)
+  Fcoeff = ITensors.coefficient(F)
+  Fops = ITensors.terms(F)
   Fnames = ITensors.name.(Fops)
   Fsites = first.(ITensors.sites.(Fops))
 
@@ -71,6 +73,6 @@ end
 jordanwigner(electron_state::Vector) = electron_to_fermion(electron_state)
 
 function _is_electronic(H::OpSum)
-  oplist = join(vcat([ITensors.name.(ITensors.ops(H[k])) for k in 1:length(H)]...))
+  oplist = join(vcat([ITensors.name.(ITensors.terms(H[k])) for k in 1:length(H)]...))
   return ('↑' in oplist || '↓' in oplist)
 end

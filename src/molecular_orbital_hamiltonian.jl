@@ -145,9 +145,9 @@ function electron_to_fermion(hamiltonian::OpSum)
   # loop over MPOTerms
   for k in 1:length(hamiltonian)
     h = hamiltonian[k]
-    c = ITensors.coef(h)
-    sites = first.(ITensors.sites.(ITensors.ops(h)))
-    O = ITensors.name.(ITensors.ops(h))
+    c = ITensors.coefficient(h)
+    sites = first.(ITensors.sites.(ITensors.terms(h)))
+    O = ITensors.name.(ITensors.terms(h))
 
     if O == ["Id"]
       fermion_hamiltonian += c, "Id", 1
