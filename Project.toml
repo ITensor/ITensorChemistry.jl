@@ -10,8 +10,9 @@ ITensors = "9136182c-28ba-11e9-034c-db9fb085ebd5"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 
 [compat]
+Combinatorics = "1.0.2"
 Fermi = "0.4"
-ITensors = "0.3"
+ITensors = "0.3.15"
 Suppressor = "0.2"
 julia = "1.6"
 
