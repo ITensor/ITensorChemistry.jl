@@ -1,5 +1,6 @@
 using ITensors
 using ITensorChemistry
+using ITensorParallel
 using OptimKit
 using Random
 using Zygote
@@ -14,41 +15,41 @@ basis = "sto-3g"
 @show molecule
 @show basis
 
-# Split the Hamiltonian into `nparts` sub-Hamiltonians
+# Split Hamiltonian into nparts
 nparts = 2
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(nparts; molecule, basis)
+hf = @time molecular_orbital_hamiltonian(molecule; basis)
+hamiltonian = hf.hamiltonian
+hartree_fock_state = hf.hartree_fock_state
+hartree_fock_energy = hf.hartree_fock_energy
 println("Hartree-Fock complete")
 
-println("Basis set size = ", length(state))
+println("Basis set size = ", length(hartree_fock_state))
 
-s = siteinds("Electron", length(state); conserve_qns=true)
+s = siteinds("Electron", length(hartree_fock_state); conserve_qns=true)
 
 println("\nConstruct MPO")
 
+hamiltonians = partition(hamiltonian, nparts)
 H = Vector{MPO}(undef, nparts)
 @time for n in 1:nparts
-  H[n] = splitblocks(linkinds, MPO(hamiltonian[n], s))
+  H[n] = splitblocks(linkinds, MPO(hamiltonians[n], s))
 end
 println("MPO constructed")
 
 @show maxlinkdim.(H)
 
-ψhf = MPS(s, state)
+ψhf = MPS(s, hartree_fock_state)
 
-@show inner(ψhf, H, ψhf)
+@show inner(ψhf', H, ψhf)
 @show hartree_fock_energy
 
-sweeps = Sweeps(4)
-setmaxdim!(sweeps, 100, 200)
-setcutoff!(sweeps, 1e-6)
-setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
+dmrg_params = (nsweeps=4, maxdim=[100, 200], cutoff=1e-6, noise=[1e-6, 1e-7, 1e-8, 0.0])
 
 println("\nRunning DMRG")
-@show sweeps
-
-e, ψ = dmrg(H, ψhf, sweeps)
+@show dmrg_params
+e, ψ = dmrg(H, ψhf; dmrg_params...)
 println("DMRG complete")
 
 function ITensors.op(::OpName"ucc_1e", st::SiteType"Electron"; f)
@@ -82,24 +83,14 @@ function ucc_circuit(s, t)
   t_1e = t[1:nt_1e]
   t_2e = t[(nt_1e + 1):end]
 
-  U_1e = [
-    (
-      f(x) = exp(t_1e[i] * x);
-      n⃗ = sites_1e[i];
-      s⃗ = [s[n] for n in n⃗];
-      op("ucc_1e", s⃗...; f=f)
-    )
-    for i in eachindex(sites_1e)
-  ]
-  U_2e = [
-    (
-      f(x) = exp(t_2e[i] * x);
-      n⃗ = sites_2e[i];
-      s⃗ = [s[n] for n in n⃗];
-      op("ucc_2e", s⃗...; f=f)
-    )
-    for i in eachindex(sites_2e)
-  ]
+  U_1e = [(f(x) = exp(t_1e[i] * x);
+  n⃗ = sites_1e[i];
+  s⃗ = [s[n] for n in n⃗];
+  op("ucc_1e", s⃗...; f=f)) for i in eachindex(sites_1e)]
+  U_2e = [(f(x) = exp(t_2e[i] * x);
+  n⃗ = sites_2e[i];
+  s⃗ = [s[n] for n in n⃗];
+  op("ucc_2e", s⃗...; f=f)) for i in eachindex(sites_2e)]
   return [U_1e; U_2e]
 end
 
@@ -138,7 +129,7 @@ t0 = [t0_1e; t0_2e]
 U0 = ucc_circuit(s, t0)
 
 U0ψhf = apply(U0, ψhf)
-@show inner(U0ψhf, H, U0ψhf)
+@show inner(U0ψhf', H, U0ψhf)
 
 @show loss(t0)
 

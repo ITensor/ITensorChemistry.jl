@@ -4,14 +4,15 @@ using Fermi
 using ITensors
 using Suppressor
 
-include(joinpath("molecules", "molecule.jl"))
-for file in readdir(joinpath(@__DIR__, "molecules", "molecules"); join=true)
-  if endswith(file, ".jl")
-    include(file)
-  end
-end
+import Combinatorics: levicivita
+
+import Base: *, length, getindex, setindex!, iterate, copy, push!, resize!
+
+include("molecule.jl")
+include("molecules.jl")
 include("molecular_orbital_hamiltonian.jl")
+include("pauli.jl")
+include("qubitmaps.jl")
 
-export molecular_orbital_hamiltonian
-
+export Atom, Molecule, molecular_orbital_hamiltonian, jordanwigner
 end
