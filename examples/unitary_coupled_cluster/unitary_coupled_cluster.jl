@@ -18,7 +18,9 @@ basis = "sto-3g"
 nparts = 2
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(nparts; molecule, basis)
+(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(
+  nparts; molecule, basis
+)
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(state))
@@ -82,24 +84,14 @@ function ucc_circuit(s, t)
   t_1e = t[1:nt_1e]
   t_2e = t[(nt_1e + 1):end]
 
-  U_1e = [
-    (
-      f(x) = exp(t_1e[i] * x);
-      n⃗ = sites_1e[i];
-      s⃗ = [s[n] for n in n⃗];
-      op("ucc_1e", s⃗...; f=f)
-    )
-    for i in eachindex(sites_1e)
-  ]
-  U_2e = [
-    (
-      f(x) = exp(t_2e[i] * x);
-      n⃗ = sites_2e[i];
-      s⃗ = [s[n] for n in n⃗];
-      op("ucc_2e", s⃗...; f=f)
-    )
-    for i in eachindex(sites_2e)
-  ]
+  U_1e = [(f(x) = exp(t_1e[i] * x);
+  n⃗ = sites_1e[i];
+  s⃗ = [s[n] for n in n⃗];
+  op("ucc_1e", s⃗...; f=f)) for i in eachindex(sites_1e)]
+  U_2e = [(f(x) = exp(t_2e[i] * x);
+  n⃗ = sites_2e[i];
+  s⃗ = [s[n] for n in n⃗];
+  op("ucc_2e", s⃗...; f=f)) for i in eachindex(sites_2e)]
   return [U_1e; U_2e]
 end
 

@@ -18,7 +18,9 @@ basis = "sto-3g"
 @show basis
 
 println("\nRunning Hartree-Fock")
-(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(Threads.nthreads(); molecule, basis)
+(; hamiltonian, state, hartree_fock_energy) = @time molecular_orbital_hamiltonian(
+  Threads.nthreads(); molecule, basis
+)
 println("Hartree-Fock complete")
 
 println("Basis set size = ", length(state))

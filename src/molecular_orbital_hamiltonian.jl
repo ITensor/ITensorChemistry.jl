@@ -4,12 +4,8 @@
 #Credit to: Gustavo Aroeira (https://github.com/gustavojra)
 #"""
 function molecular_orbital_hamiltonian_coefficients(;
-  molecule,
-  basis="sto-3g",
-  diis= true, 
-  oda = true, 
+  molecule, basis="sto-3g", diis=true, oda=true
 )
-  
   @suppress begin
     Fermi.Options.set("molstring", xyz_string(molecule))
     Fermi.Options.set("basis", basis)
@@ -32,7 +28,7 @@ function molecular_orbital_hamiltonian_coefficients(;
   return (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy)
 end
 
-function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; atol = 1e-15)
+function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; atol=1e-15)
   # Representation of the second quantized quantum chemistry Hamiltonian.
   hamiltonian = OpSum()
   hamiltonian += nuclear_energy, "Id", 1
@@ -110,8 +106,13 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy, nsub_hamiltoni
   return hamiltonian
 end
 
-function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; sitetype::String = "Electron", kwargs...)
-  (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy) = molecular_orbital_hamiltonian_coefficients(; kwargs...)
+function molecular_orbital_hamiltonian(
+  nsub_hamiltonians=nothing; sitetype::String="Electron", kwargs...
+)
+  res = molecular_orbital_hamiltonian_coefficients(; kwargs...)
+  hα, gα, nαocc, hartree_fock_energy, nuclear_energy = res.hα,
+  res.gα, res.nαocc, res.hartree_fock_energy,
+  res.nuclear_energy
 
   if isnothing(nsub_hamiltonians)
     hamiltonian = _molecular_orbital_hamiltonian(hα, gα, nuclear_energy)
@@ -123,17 +124,16 @@ function molecular_orbital_hamiltonian(nsub_hamiltonians=nothing; sitetype::Stri
   αocc_state = [i in 1:nαocc ? 1 : 0 for i in 1:nα]
   occ_to_state = Dict([0 => 1, 1 => 4])
   hartree_fock_state = [occ_to_state[n] for n in αocc_state]
-  
+
   if sitetype == "Fermion"
     hartree_fock_state = electron_to_fermion(hartree_fock_state)
     hamiltonian = electron_to_fermion(hamiltonian)
   elseif sitetype == "Qubit"
-    hartree_fock_state = jordanwigner(hartree_fock_state) 
+    hartree_fock_state = jordanwigner(hartree_fock_state)
     hamiltonian = jordanwigner(hamiltonian)
   end
   return (; hamiltonian, hartree_fock_state, hartree_fock_energy)
 end
-
 
 """
     electron_to_fermion(hamiltonian::OpSum)
@@ -148,16 +148,16 @@ function electron_to_fermion(hamiltonian::OpSum)
     c = ITensors.coef(h)
     sites = first.(ITensors.sites.(ITensors.ops(h)))
     O = ITensors.name.(ITensors.ops(h))
-    
+
     if O == ["Id"]
       fermion_hamiltonian += c, "Id", 1
     else
       ops_and_sites = []
       # loop over each single-site operator
-      for (j,o) in enumerate(O)
+      for (j, o) in enumerate(O)
         # the fermion is placed at twice the site number + 1 if ↓
         fermionsite = 2 * sites[j] + Int(o[end] == '↓') - 1
-        ops_and_sites = vcat(ops_and_sites, (String(strip(o, o[end])), fermionsite)...) 
+        ops_and_sites = vcat(ops_and_sites, (String(strip(o, o[end])), fermionsite)...)
       end
       fermion_hamiltonian += (c, ops_and_sites...)
     end
@@ -171,11 +171,10 @@ end
 Map a product state from spinfull to spinless fermions.
 """
 function electron_to_fermion(electron_state::Vector)
-  stmap = [[1,1],[1,2],[2,1],[2,2]]
-  fermion_state = zeros(Int,2*length(electron_state))
+  stmap = [[1, 1], [1, 2], [2, 1], [2, 2]]
+  fermion_state = zeros(Int, 2 * length(electron_state))
   for k in 1:length(electron_state)
-    fermion_state[2*k-1:2*k] = stmap[electron_state[k]]
+    fermion_state[(2 * k - 1):(2 * k)] = stmap[electron_state[k]]
   end
   return fermion_state
 end
-
