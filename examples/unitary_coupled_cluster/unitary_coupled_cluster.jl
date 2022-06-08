@@ -29,7 +29,7 @@ println("\nConstruct MPO")
 
 H = Vector{MPO}(undef, nparts)
 @time for n in 1:nparts
-  H[n] = MPO(hamiltonian[n], s)
+  H[n] = splitblocks(linkinds, MPO(hamiltonian[n], s))
 end
 println("MPO constructed")
 
@@ -74,6 +74,8 @@ nα = length(s)
 sites_1e = [(i, j) for i in 1:nα, j in 1:nα if i < j]
 sites_2e = [(i, j, k, l) for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα if i < j < k < l]
 
+# TODO: implement a simpler, more local circuit, like one from:
+# https://arxiv.org/abs/1805.04340
 function ucc_circuit(s, t)
   nt_1e = length(sites_1e)
   nt_2e = length(sites_2e)
@@ -101,10 +103,19 @@ function ucc_circuit(s, t)
   return [U_1e; U_2e]
 end
 
+# Directly perform VQE.
+#function loss(t)
+#  U = ucc_circuit(s, t)
+#  Uψhf = apply(U, ψhf; cutoff=1e-2)
+#  return inner(Uψhf', H, Uψhf; cutoff=1e-2)
+#end
+
+# Quantum state preparation using DMRG
+# as the target state.
 function loss(t)
   U = ucc_circuit(s, t)
-  Uψhf = apply(U, ψhf; cutoff=1e-2)
-  return inner(Uψhf', H, Uψhf; cutoff=1e-2)
+  Uψhf = apply(U, ψhf; cutoff=1e-6)
+  return -abs2(inner(ψ, Uψhf))
 end
 
 nt_1e = length(sites_1e)
@@ -136,3 +147,7 @@ algorithm = LBFGS(; gradtol=1e-3, verbosity=2)
 tₒₚₜ, lossₒₚₜ, ∇lossₒₚₜ, numfg, normgradhistory = optimize(loss_∇loss, t0, algorithm)
 
 @show loss(tₒₚₜ)
+
+Ut = ucc_circuit(s, tₒₚₜ)
+Utψhf = apply(Ut, ψhf; cutoff=1e-6)
+@show inner(Utψhf', H, Utψhf)
