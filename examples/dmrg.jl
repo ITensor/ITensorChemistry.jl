@@ -31,9 +31,9 @@ println("MPO constructed")
 @show inner(ψhf', H, ψhf)
 @show hartree_fock_energy
 
-println("\nRunning DMRG")
-@show sweeps
-
 dmrg_params = (nsweeps=10, maxdim=[100, 200], cutoff=1e-6, noise=[1e-6, 1e-7, 1e-8, 0.0])
+
+println("\nRunning DMRG")
+@show dmrg_params
 e, ψ = dmrg(H, ψhf; dmrg_params...)
 println("DMRG complete")

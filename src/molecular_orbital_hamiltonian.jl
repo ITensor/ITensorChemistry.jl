@@ -4,8 +4,7 @@
 #Credit to: Gustavo Aroeira (https://github.com/gustavojra)
 #"""
 function molecular_orbital_hamiltonian_coefficients(
-  molecule;
-  basis="sto-3g", diis=true, oda=true
+  molecule; basis="sto-3g", diis=true, oda=true
 )
   @suppress begin
     Fermi.Options.set("molstring", xyz_string(Molecule(molecule)))
@@ -53,9 +52,7 @@ function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; atol=1e-15)
   return hamiltonian
 end
 
-function molecular_orbital_hamiltonian(
-  molecule; sitetype::String="Electron", kwargs...
-)
+function molecular_orbital_hamiltonian(molecule; sitetype::String="Electron", kwargs...)
   res = molecular_orbital_hamiltonian_coefficients(molecule; kwargs...)
   hα, gα, nαocc, hartree_fock_energy, nuclear_energy = res.hα,
   res.gα, res.nαocc, res.hartree_fock_energy,

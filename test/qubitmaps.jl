@@ -5,9 +5,7 @@ using Test
 @testset "Jordan Wigner mapping" begin
   molecule = Molecule("H₂")
   basis = "sto-3g"
-  hf = molecular_orbital_hamiltonian(molecule;
-    basis, diis=false, oda=false
-  )
+  hf = molecular_orbital_hamiltonian(molecule; basis, diis=false, oda=false)
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
   hartree_fock_energy = hf.hartree_fock_energy
@@ -18,8 +16,8 @@ using Test
   @test inner(ψ₀e', He, ψ₀e) ≈ hartree_fock_energy
   electronE = copy(hartree_fock_energy)
 
-  hf = molecular_orbital_hamiltonian(molecule;
-    basis, diis=false, oda=false, sitetype="Fermion"
+  hf = molecular_orbital_hamiltonian(
+    molecule; basis, diis=false, oda=false, sitetype="Fermion"
   )
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
@@ -30,8 +28,8 @@ using Test
   ψ₀f = MPS(fermion_hilbert, hartree_fock_state)
   @test inner(ψ₀f', Hf, ψ₀f) ≈ electronE
 
-  hf = molecular_orbital_hamiltonian(molecule;
-    basis, diis=false, oda=false, sitetype="Qubit"
+  hf = molecular_orbital_hamiltonian(
+    molecule; basis, diis=false, oda=false, sitetype="Qubit"
   )
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
