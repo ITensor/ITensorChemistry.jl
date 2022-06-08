@@ -58,7 +58,7 @@ Base.push!(molecule::Molecule, atom::Atom) =
 
 # parse data contained in `mol` to generate
 # an input string encoding for HF in Fermi.jl
-function parse_molecule(molecule::Molecule)
+function xyz_string(molecule::Molecule)
   molstr = ""
   for a in 1:length(molecule)
     atomname = name(molecule[a])

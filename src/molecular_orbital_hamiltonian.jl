@@ -11,7 +11,7 @@ function molecular_orbital_hamiltonian_coefficients(;
 )
   
   @suppress begin
-    Fermi.Options.set("molstring", parse_molecule(molecule))
+    Fermi.Options.set("molstring", xyz_string(molecule))
     Fermi.Options.set("basis", basis)
     Fermi.Options.set("diis", diis)
     Fermi.Options.set("oda", oda)
