@@ -4,8 +4,9 @@ using ITensorParallel
 
 ITensors.BLAS.set_num_threads(1)
 ITensors.Strided.disable_threads()
-ITensors.disable_threaded_blocksparse()
 ITensorChemistry.Fermi.TBLIS.set_num_threads(1)
+
+ITensors.enable_threaded_blocksparse()
 
 @show Threads.nthreads()
 
@@ -22,15 +23,19 @@ hartree_fock_state = hf.hartree_fock_state
 hartree_fock_energy = hf.hartree_fock_energy
 println("Hartree-Fock complete")
 
-println("Basis set size = ", length(hartree_fock_state))
+nsites = length(hartree_fock_state)
 
-s = siteinds("Electron", length(hartree_fock_state); conserve_qns=true)
+println("Basis set size = ", nsites)
+
+s = siteinds("Electron", nsites; conserve_qns=true)
 
 println("\nConstruct MPO")
 
 hamiltonians = partition(hamiltonian, Threads.nthreads())
 H = Vector{MPO}(undef, Threads.nthreads())
 @time Threads.@threads for n in 1:Threads.nthreads()
+  Hn = MPO(hamiltonians[n], s)
+  @show n, Threads.threadid(), maxlinkdim(Hn)
   H[Threads.threadid()] = MPO(hamiltonians[n], s)
 end
 println("MPO constructed")

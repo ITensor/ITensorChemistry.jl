@@ -31,22 +31,22 @@ end
 function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; atol=1e-15)
   # Representation of the second quantized quantum chemistry Hamiltonian.
   hamiltonian = OpSum()
-  hamiltonian += nuclear_energy, "Id", 1
+  add!(hamiltonian, nuclear_energy, "Id", 1)
   nα = size(hα, 1)
   for i in 1:nα, j in 1:nα
     if norm(hα[i, j]) > atol
-      hamiltonian += hα[i, j], "c†↑", i, "c↑", j
-      hamiltonian += hα[i, j], "c†↓", i, "c↓", j
+      add!(hamiltonian, hα[i, j], "c†↑", i, "c↑", j)
+      add!(hamiltonian, hα[i, j], "c†↓", i, "c↓", j)
     end
   end
   for i in 1:nα, j in 1:nα, k in 1:nα, l in 1:nα
     if norm(gα[i, j, k, l]) > atol
       if (i ≠ j) && (k ≠ l) # Otherwise the terms are exactly zero
-        hamiltonian += gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l
-        hamiltonian += gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l
+        add!(hamiltonian, gα[i, j, k, l], "c†↑", i, "c†↑", j, "c↑", k, "c↑", l)
+        add!(hamiltonian, gα[i, j, k, l], "c†↓", i, "c†↓", j, "c↓", k, "c↓", l)
       end
-      hamiltonian += gα[i, j, k, l], "c†↑", i, "c†↓", j, "c↓", k, "c↑", l
-      hamiltonian += gα[i, j, k, l], "c†↓", i, "c†↑", j, "c↑", k, "c↓", l
+      add!(hamiltonian, gα[i, j, k, l], "c†↑", i, "c†↓", j, "c↓", k, "c↑", l)
+      add!(hamiltonian, gα[i, j, k, l], "c†↓", i, "c†↑", j, "c↑", k, "c↓", l)
     end
   end
   return hamiltonian
