@@ -10,7 +10,7 @@ ITensors.enable_threaded_blocksparse()
 
 @show Threads.nthreads()
 
-molecule = "H₂O"
+molecule = Molecule("H₂O")
 basis = "sto-3g"
 
 @show molecule
