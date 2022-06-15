@@ -38,13 +38,11 @@ sites = siteinds("Electron", nsites; conserve_qns=true)
 println("\nConstruct MPO")
 
 nprocs = MPI.Comm_size(MPI.COMM_WORLD)
-opsums = collect(
-  Iterators.partition(partition(opsum, nparts), nparts ÷ nprocs)
-)
+opsums = collect(Iterators.partition(partition(opsum, nparts), nparts ÷ nprocs))
 
 process = MPI.Comm_rank(MPI.COMM_WORLD) + 1
 nterms = length(opsums[process])
-H = Vector{MPO}(undef, nterms) 
+H = Vector{MPO}(undef, nterms)
 Threads.@threads for j in 1:nterms
   H[j] = MPO(opsums[process][j], sites)
 end
