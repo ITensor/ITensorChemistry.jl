@@ -6,7 +6,7 @@
     spin=0
 """
 function molecular_orbital_hamiltonian_coefficients(
-  molecule::String; basis="sto-3g", charge=0, spin=0,
+  molecule::String; basis="sto-3g", charge=0, spin=0
 )
   # Input Check (TODO add UHF)
   if spin != 0
@@ -35,18 +35,17 @@ function molecular_orbital_hamiltonian_coefficients(
   nαocc = pyconvert(Number, mol.nelec[1])
   nuclear_energy = pyconvert(Number, mf.energy_nuc())
   hartree_fock_energy = pyconvert(Number, mf.e_tot)
-  
+
   # println(pyconvert(String, mf.chkfile))
   rm(pyconvert(String, mf.chkfile))
 
   return (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy)
 end
 
-function molecular_orbital_hamiltonian_coefficients(
-  molecule::Molecule; kwargs...
-)
-  molecular_orbital_hamiltonian_coefficients(xyz_string(Molecule(molecule)); kwargs...)
-
+function molecular_orbital_hamiltonian_coefficients(molecule::Molecule; kwargs...)
+  return molecular_orbital_hamiltonian_coefficients(
+    xyz_string(Molecule(molecule)); kwargs...
+  )
 end
 
 function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; atol=1e-15)
