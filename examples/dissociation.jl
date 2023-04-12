@@ -20,7 +20,7 @@ function energy_at_bond(r)
   molecule = Molecule([("H", 0.0, 0.0, 0.0), ("H", r, 0.0, 0.0)])
 
   # build electronic hamiltonian and solve HF
-  hf = molecular_orbital_hamiltonian(molecule; basis="sto-3g", diis=false, oda=false)
+  hf = molecular_orbital_hamiltonian(molecule; basis="sto-3g")
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
   hartree_fock_energy = hf.hartree_fock_energy
