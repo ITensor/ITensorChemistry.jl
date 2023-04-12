@@ -6,7 +6,7 @@ using Test
   molecule = Molecule("H₂")
   basis = "sto-3g"
 
-  hf = molecular_orbital_hamiltonian(molecule; basis, diis=false, oda=false)
+  hf = molecular_orbital_hamiltonian(molecule; basis)
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
   hartree_fock_energy = hf.hartree_fock_energy
@@ -27,7 +27,7 @@ end
 @testset "fermion hamiltonian" begin
   molecule = Molecule("H₂")
   basis = "sto-3g"
-  hf = molecular_orbital_hamiltonian(molecule; basis, diis=false, oda=false)
+  hf = molecular_orbital_hamiltonian(molecule; basis)
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
   hartree_fock_energy = hf.hartree_fock_energy
@@ -38,9 +38,7 @@ end
 
   @test inner(ψe', He, ψe) ≈ hartree_fock_energy
 
-  hf = molecular_orbital_hamiltonian(
-    molecule; basis, diis=false, oda=false, sitetype="Fermion"
-  )
+  hf = molecular_orbital_hamiltonian(molecule; basis, sitetype="Fermion")
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
   hartree_fock_energy = hf.hartree_fock_energy

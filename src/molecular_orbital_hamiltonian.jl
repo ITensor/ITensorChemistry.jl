@@ -1,31 +1,51 @@
 """
-#Source: https://github.com/FermiQC/Fermi.jl/discussions/117
-#
-#Credit to: Gustavo Aroeira (https://github.com/gustavojra)
-#"""
+    molecular_orbital_hamiltonian_coefficients
+    molecule::String 
+    basis="sto-3g"
+    charge=0
+    spin=0
+"""
 function molecular_orbital_hamiltonian_coefficients(
-  molecule; basis="sto-3g", diis=true, oda=true
+  molecule::String; basis="sto-3g", charge=0, spin=0
 )
-  @suppress begin
-    Fermi.Options.set("molstring", xyz_string(Molecule(molecule)))
-    Fermi.Options.set("basis", basis)
-    Fermi.Options.set("diis", diis)
-    Fermi.Options.set("oda", oda)
+  # Input Check (TODO add UHF)
+  if spin != 0
+    error("ITensorChemistry can only handle spin=0 systems right now!")
   end
-  hf_wfn = @suppress Fermi.HartreeFock.RHF()
-  aoints = @suppress Fermi.Integrals.IntegralHelper(orbitals=hf_wfn.orbitals)
 
-  hα = @suppress aoints["T"] + aoints["V"]
-  gα = @suppress aoints["ERI"]
+  mol = pyscf.gto.M(; atom=molecule, basis=basis, charge=charge, spin=spin, verbose=3)
 
-  # Convert `g` from Chemist convention to Physicist convention
-  gα = 0.5 * permutedims(gα, (3, 2, 1, 4))
+  # Run HF
+  mf = pyscf.scf.RHF(mol)
+  mf.chkfile = ".tmpfile_pyscf_itensor" # Set this bc Python.tempfile can cause problems sometimes
+  mf.kernel()
+  println("RHF Energy (Ha): ", mf.e_tot)
 
-  nαocc = hf_wfn.molecule.Nα
-  hartree_fock_energy = hf_wfn.energy
-  nuclear_energy = aoints.molecule.Vnuc
+  # Create shorthands for 1- and 2-body integrals in MO basis
+  mo = pyconvert(Array, mf.mo_coeff)
+  hcore_ao = pyconvert(Array, mf.get_hcore())
+
+  n = size(mo, 1)
+  one_body = mo' * hcore_ao * mo
+  two_body = reshape(pyconvert(Array, mol.ao2mo(mf.mo_coeff; aosym=1)), n, n, n, n)
+
+  # Collect data from HF calculation to return
+  hα = one_body
+  gα = 0.5 * permutedims(two_body, (3, 2, 1, 4))
+  nαocc = pyconvert(Number, mol.nelec[1])
+  nuclear_energy = pyconvert(Number, mf.energy_nuc())
+  hartree_fock_energy = pyconvert(Number, mf.e_tot)
+
+  # println(pyconvert(String, mf.chkfile))
+  rm(pyconvert(String, mf.chkfile))
 
   return (; hα, gα, nαocc, hartree_fock_energy, nuclear_energy)
+end
+
+function molecular_orbital_hamiltonian_coefficients(molecule::Molecule; kwargs...)
+  return molecular_orbital_hamiltonian_coefficients(
+    xyz_string(Molecule(molecule)); kwargs...
+  )
 end
 
 function _molecular_orbital_hamiltonian(hα, gα, nuclear_energy; atol=1e-15)

@@ -3,6 +3,7 @@
 *.jl.mem
 *.o
 *.swp
+.CondaPkg
 .DS_Store
 .benchmarkci
 .tmp

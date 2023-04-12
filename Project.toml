@@ -5,15 +5,13 @@ version = "0.0.1"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
-Fermi = "9237668d-08c8-4784-b8dd-383aa52fcf74"
 ITensors = "9136182c-28ba-11e9-034c-db9fb085ebd5"
-Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
+PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 
 [compat]
 Combinatorics = "1.0.2"
-Fermi = "0.4"
 ITensors = "0.3.15"
-Suppressor = "0.2"
+PythonCall = "0.9.12"
 julia = "1.6"
 
 [extras]
