@@ -10,9 +10,9 @@
 
 The main functionality of this package is outputting a second quantized quantum chemistry Hamiltonian in the molecular orbital basis, given a molecule and atomic orbital basis.
 
-Below the hood, the package uses Hartree-Fock implemented in [Fermi.jl](https://github.com/FermiQC/Fermi.jl) to obtain the molecular orbital basis and one-electron and two-electron integrals.
+Under the hood, the package uses Hartree-Fock implemented in [PySCF](https://pyscf.org/), which we call using [PythonCall.jl](https://cjdoris.github.io/PythonCall.jl/stable/), to obtain the molecular orbital basis and one-electron and two-electron integrals.
 
-The main output is an `OpSum` from ITensors.jl, which is a representation of the second quantized Hamiltonian. This can be converted into a variety of other formats, such as a matrix product operator (MPO) to run DMRG, quantum circuit, full matrix representation for exact diagonalization (ED) for full configuration interaction (FCI) calculations, etc.
+The main output is an `OpSum` from [ITensors.jl](https://itensor.github.io/ITensors.jl/dev/), which is a representation of the second quantized Hamiltonian. This can be converted into a variety of other formats, such as a matrix product operator (MPO) to run DMRG, quantum circuit, full matrix representation for exact diagonalization (ED) for full configuration interaction (FCI) calculations, etc.
 
 ## Installation
 
@@ -32,31 +32,19 @@ using ITensors
 using ITensorChemistry
 using Plots
 
-# bond distances
-r⃗ = 0.3:0.03:3.0
-
-# hilbert space
-s = siteinds("Electron", 2; conserve_qns=true)
-
-# dmrg params
-sweeps = Sweeps(10)
-setmaxdim!(sweeps, 10,20,30,40,50,100)
-setcutoff!(sweeps, 1e-8)
-setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
-
 function energy_at_bond(r)
   # define molecule geometry
   molecule = Molecule([("H", 0.0, 0.0, 0.0), 
                        ("H",   r, 0.0, 0.0)])
   
   # build electronic hamiltonian and solve HF
-  hf = molecular_orbital_hamiltonian(molecule;
-                                     basis = "sto-3g", 
-                                     diis = false, 
-                                     oda = false)
+  hf = molecular_orbital_hamiltonian(molecule; basis="sto-3g")
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
   hartree_fock_energy = hf.hartree_fock_energy
+
+  # hilbert space
+  s = siteinds("Electron", 2; conserve_qns=true)
 
   H = MPO(hamiltonian, s)
   
@@ -64,9 +52,18 @@ function energy_at_bond(r)
   ψhf = MPS(s, hartree_fock_state)
   
   # run dmrg
-  dmrg_energy, _ = dmrg(H, ψhf, sweeps; outputlevel = 0)
+  dmrg_kwargs = (;
+    nsweeps=10,
+    maxdim=[10,20,30,40,50,100],
+    cutoff=1e-8,
+    noise=[1e-6, 1e-7, 1e-8, 0.0],
+  )
+  dmrg_energy, _ = dmrg(H, ψhf; nsweeps=10, outputlevel=0)
   return hartree_fock_energy, dmrg_energy
 end
+
+# bond distances
+r⃗ = 0.3:0.03:3.0
 
 energies = []
 for r in r⃗
@@ -88,18 +85,20 @@ molecule = Molecule("N₂")
 basis = "sto-3g"
 @show molecule
 
-hf = molecular_orbital_hamiltonian(molecule; basis)
-hamiltonian = hf.hamiltonian
+hf = molecular_orbital_hamiltonian(molecule; basis);
+hamiltonian = hf.hamiltonian;
 hartree_fock_state = hf.hartree_fock_state
 
 println("Number of orbitals = ", length(hartree_fock_state))
+@show hamiltonian[end];
 println("Number of fermionic operators = ", length(hamiltonian))
-println("Hartree-Fock state |HF⟩ = |",prod(string.(hartree_fock_state)),"⟩")
+println("Hartree-Fock state |HF⟩ = |", prod(string.(hartree_fock_state)),"⟩")
 
-qubit_hamiltonian = jordanwigner(hamiltonian)
+qubit_hamiltonian = jordanwigner(hamiltonian);
 qubit_state = jordanwigner(hartree_fock_state)
+@show qubit_hamiltonian[end];
 println("Number of qubit operators = ", length(qubit_hamiltonian))
-println("Hartree-Fock state |HF⟩ = |",prod(string.(qubit_state)),"⟩") 
+println("Hartree-Fock state |HF⟩ = |", prod(string.(qubit_state)),"⟩") 
 # -------------------------------------------------------------------------- 
 #  molecule = Molecule
 #   Atom 1: N,   r⃗ = (0.0, 0.0, 0.550296)
