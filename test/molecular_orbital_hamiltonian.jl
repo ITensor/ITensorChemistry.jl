@@ -38,9 +38,7 @@ end
 
   @test inner(ψe', He, ψe) ≈ hartree_fock_energy
 
-  hf = molecular_orbital_hamiltonian(
-    molecule; basis, sitetype="Fermion"
-  )
+  hf = molecular_orbital_hamiltonian(molecule; basis, sitetype="Fermion")
   hamiltonian = hf.hamiltonian
   hartree_fock_state = hf.hartree_fock_state
   hartree_fock_energy = hf.hartree_fock_energy
