@@ -1,4 +1,4 @@
-using ITensors: ITensorMPS
+using ITensors.ITensorMPS: ITensorMPS
 """
     jordanwigner(H::OpSum; threshold = 1e-15)
 
