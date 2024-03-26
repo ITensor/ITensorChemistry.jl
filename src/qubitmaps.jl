@@ -1,3 +1,4 @@
+using ITensors.ITensorMPS: ITensorMPS
 """
     jordanwigner(H::OpSum; threshold = 1e-15)
 
@@ -20,7 +21,7 @@ function jordanwigner(H::OpSum; atol=1e-20)
       end
     end
   end
-  Hq = ITensors.sortmergeterms(Hq)
+  Hq = ITensorMPS.sortmergeterms(Hq)
   prunedHq = OpSum()
   for k in 1:length(Hq)
     if norm(ITensors.coefficient(Hq[k])) > atol
