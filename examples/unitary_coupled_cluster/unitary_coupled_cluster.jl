@@ -1,4 +1,4 @@
-using ITensors
+using ITensors, ITensorMPS
 using ITensorChemistry
 using ITensorParallel
 using OptimKit
