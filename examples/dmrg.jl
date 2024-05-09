@@ -1,4 +1,4 @@
-using ITensors
+using ITensors, ITensorMPS
 using ITensorChemistry
 
 molecule = Molecule("H₂O")

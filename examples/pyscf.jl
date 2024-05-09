@@ -1,5 +1,5 @@
 using PyCall
-using ITensors
+using ITensors, ITensorMPS
 
 pyscf = pyimport("pyscf")
 fci = pyimport("pyscf.fci")

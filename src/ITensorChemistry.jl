@@ -1,6 +1,6 @@
 module ITensorChemistry
 
-using ITensors
+using ITensors, ITensorMPS
 using PythonCall
 
 import Combinatorics: levicivita

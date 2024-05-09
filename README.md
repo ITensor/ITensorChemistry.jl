@@ -28,7 +28,7 @@ julia> Pkg.add(; url="https://github.com/mtfishman/ITensorChemistry.jl")
 
 
 ```julia
-using ITensors
+using ITensors, ITensorMPS
 using ITensorChemistry
 using Plots
 
@@ -77,7 +77,7 @@ end
 ### Jordan-Wigner transformation
 
 ```julia
-using ITensors
+using ITensors, ITensorMPS
 using ITensorChemistry
 
 # Nitrogen molecule
