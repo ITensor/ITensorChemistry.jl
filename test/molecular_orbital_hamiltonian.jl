@@ -52,7 +52,7 @@ end
   setmaxdim!(sweeps, 100, 200)
   setcutoff!(sweeps, 1e-10)
   setnoise!(sweeps, 1e-6, 1e-7, 1e-8, 0.0)
-  Ee, ψe = dmrg(He, randomMPS(se), sweeps; outputlevel=0)
+  Ee, ψe = dmrg(He, random_mps(se), sweeps; outputlevel=0)
 
   sweeps = Sweeps(10)
   setmaxdim!(sweeps, 100, 200)
