@@ -12,7 +12,7 @@ PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 [compat]
 Combinatorics = "1.0.2"
 ITensorMPS = "0.1, 0.2"
-ITensors = "0.3.58, 0.4, 0.5, 0.6"
+ITensors = "0.3.58, 0.4, 0.5, 0.6, 0.7"
 PythonCall = "0.9.12"
 julia = "1.6"
 
